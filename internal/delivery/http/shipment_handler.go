@@ -33,6 +33,7 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/view", h.ViewFile)
 	mux.HandleFunc("/export-excel", h.ExportExcel)
 	mux.HandleFunc("/generate-invoice", h.GenerateInvoice) // <-- Tambahkan rute ini
+	mux.HandleFunc("/delete", h.DeleteShipment)
 }
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
 func (h *ShipmentHandler) ShowFormAndTable(w http.ResponseWriter, r *http.Request) {
@@ -266,4 +267,12 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "inline; filename=Invoice_"+s.ID[:8]+".pdf")
 	pdf.Output(w)
+}
+
+func (h *ShipmentHandler) DeleteShipment(w http.ResponseWriter, r *http.Request) {
+    id := r.URL.Query().Get("id")
+    if id != "" {
+        h.usecase.DeleteShipment(r.Context(), id)
+    }
+    http.Redirect(w, r, "/", http.StatusSeeOther)
 }

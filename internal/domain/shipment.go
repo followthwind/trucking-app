@@ -20,13 +20,14 @@ type Shipment struct {
 	Remark		string	`json:"remark"`
 	DocumentPath	string	`json:"document_path"`
 	CreatedAt	time.Time	`json:"created_at"`
-	IsDelete	string	`json:"is_delete"`
+	IsDelete	bool	`json:"is_delete"`
 }
 
 type ShipmentRepository interface {
 	Create(ctx context.Context, shipment *Shipment) error
 	FetchAll(ctx context.Context) ([]Shipment, error)
 	FindByID(ctx context.Context, id string) (*Shipment, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type ShipmentUsecase interface {
@@ -34,6 +35,8 @@ type ShipmentUsecase interface {
 	InsertShipment(ctx context.Context, shipment *Shipment, fileData []byte, contentType string) error
 	GetAllShipments(ctx context.Context) ([]Shipment, error)
 	GetShipmentByID(ctx context.Context, id string) (*Shipment, error) // <-- Tambahkan ini
+	DeleteShipment(ctx context.Context, id string ) error
+	
 }
 
 type DocumentRepository interface {

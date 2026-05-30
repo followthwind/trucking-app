@@ -63,3 +63,7 @@ func (u *shipmentUsecase) GetAllShipments(ctx context.Context) ([]domain.Shipmen
 func (u *shipmentUsecase) GetShipmentByID(ctx context.Context, id string) (*domain.Shipment, error) {
 	return u.shipmentRepo.FindByID(ctx, id)
 }
+
+func (u *shipmentUsecase) DeleteShipment(ctx context.Context, id string) error {
+    return u.shipmentRepo.Delete(ctx, id)
+}

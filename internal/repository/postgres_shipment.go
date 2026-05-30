@@ -22,13 +22,13 @@ func (r *postgresShipmentRepository) Create(ctx context.Context, s *domain.Shipm
 		INSERT INTO shipments (
 			id, item_description, origin, destination, qty, rate, 
 			amount, buying_price, gross_profit, profit_percentage, 
-			remark, document_path, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			remark, document_path, created_at, is_delete
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 	_, err := r.db.ExecContext(ctx, query, 
 		s.ID, s.ItemDescription, s.Origin, s.Destination, s.Qty, s.Rate,
 		s.Amount, s.BuyingPrice, s.GrossProfit, s.ProfitPercentage,
-		s.Remark, s.DocumentPath, s.CreatedAt,
+		s.Remark, s.DocumentPath, s.CreatedAt, s.IsDelete,
 	)
 	return err
 }
@@ -36,13 +36,13 @@ func (r *postgresShipmentRepository) Create(ctx context.Context, s *domain.Shipm
 // FetchAll bertugas menjalankan query SELECT untuk mengambil semua data dari PostgreSQL
 func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shipment, error) {
 	query := `
-		SELECT 
-			id, item_description, origin, destination, qty, rate, 
-			amount, buying_price, gross_profit, profit_percentage, 
-			remark, document_path, created_at 
-		FROM shipments
-		ORDER BY created_at DESC
-	`
+        SELECT id, item_description, origin, destination, qty, rate, 
+        amount, buying_price, gross_profit, profit_percentage, 
+        remark, document_path, created_at 
+        FROM shipments 
+        WHERE is_delete = false 
+        ORDER BY created_at DESC
+    `
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -76,4 +76,11 @@ func (r *postgresShipmentRepository) FindByID(ctx context.Context, id string) (*
 		return nil, err
 	}
 	return &s, nil
+}
+
+func (r *postgresShipmentRepository) Delete(ctx context.Context, id string) error {
+    // Mengubah status is_delete menjadi true
+    query := `UPDATE shipments SET is_delete = true WHERE id = $1`
+    _, err := r.db.ExecContext(ctx, query, id)
+    return err
 }
