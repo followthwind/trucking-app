@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SMRT Trucking Quotation System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-bottom: 20px; }
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 4px; }
+        .full-width { grid-column: span 2; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input, text-area, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #218838; }
+        
+        /* Layout untuk Header Tabel dan Tombol Export */
+        .table-header-container { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+        .table-header-container h2 { border-bottom: none; margin: 0; padding-bottom: 0; }
+        .btn-export { background-color: #007bff; color: white; text-decoration: none; padding: 10px 15px; border-radius: 4px; font-weight: bold; font-size: 14px; transition: background-color 0.2s; }
+        .btn-export:hover { background-color: #0056b3; }
+        
+        /* SOLUSI AGAR TABEL TIDAK KELUAR LAYAR */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; word-wrap: break-word; overflow-wrap: break-word; }
+        th { background-color: #007bff; color: white; cursor: pointer; user-select: none; }
+        th:hover { background-color: #0056b3; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .no-file { color: #999; font-style: italic; }
+
+        /* Atur Alokasi Lebar Kolom Secara Proporsional (Total 100%) */
+        .col-item { width: 15%; }
+        .col-from { width: 10%; }
+        .col-to { width: 15%; }
+        .col-qty { width: 7%; }
+        .col-rate { width: 10%; }
+        .col-selling { width: 11%; }
+        .col-buying { width: 10%; }
+        .col-profit { width: 10%; }
+        .col-percent { width: 6%; }
+        .col-doc { width: 10%; }
+        .col-inv { width: 10%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Input New Trucking Quotation</h2>
+    <form action="/submit" method="POST" enctype="multipart/form-data">
+        <div>
+            <label>Item:</label>
+            <input type="text" name="item_description" placeholder="e.g. Trucking Full 40'" required>
+        </div>
+        <div>
+            <label>From:</label>
+            <input type="text" name="origin" placeholder="e.g. JKT Terminal" required>
+        </div>
+        <div class="full-width">
+            <label>To:</label>
+            <input type="text" name="destination" placeholder="Full Address Balaraja" required>
+        </div>
+        <div>
+            <label>QTY:</label>
+            <input type="number" name="qty" required>
+        </div>
+        <div>
+            <label>Rate:</label>
+            <input type="number" name="rate" required>
+        </div>
+        <div>
+            <label>Buying Price (Total Modal):</label>
+            <input type="number" name="buying_price" required>
+        </div>
+        <div>
+            <label>Upload Document (PDF/Image):</label>
+            <input type="file" name="document" accept="application/pdf,image/*">
+        </div>
+        <div class="full-width">
+            <label>Remark Catatan:</label>
+            <input type="text" name="remark" placeholder="e.g. Max payload 28ton">
+        </div>
+        <button type="submit" class="full-width">Save & Calculate Quotation</button>
+    </form>
+
+    <div class="table-header-container">
+        <h2>Quotation Monitor Table</h2>
+        <a href="/export-excel" class="btn-export">📥 Export to Excel</a>
+    </div>
+
+    <div class="table-responsive">
+        <table id="quotationTable">
+            <thead>
+                <tr>
+                    <th class="col-item" onclick="sortTable(0)">Item ⇅</th>
+                    <th class="col-from" onclick="sortTable(1)">From ⇅</th>
+                    <th class="col-to" onclick="sortTable(2)">To ⇅</th>
+                    <th class="col-qty" onclick="sortTable(3)">QTY ⇅</th>
+                    <th class="col-rate" onclick="sortTable(4)">Rate ⇅</th>
+                    <th class="col-selling" onclick="sortTable(5)">Selling Price ⇅</th>
+                    <th class="col-buying" onclick="sortTable(6)">Buying Price ⇅</th>
+                    <th class="col-profit" onclick="sortTable(7)">Gross Profit ⇅</th>
+                    <th class="col-percent" onclick="sortTable(8)">% ⇅</th>
+                    <th class="col-doc">Document</th>
+                    <th class="col-inv">Invoice</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .}}
+                <tr>
+                    <td>{{.ItemDescription}}</td>
+                    <td>{{.Origin}}</td>
+                    <td>{{.Destination}}</td>
+                    <td>{{.Qty}}</td>
+                    <td>{{.Rate}}</td>
+                    <td><strong>{{.Amount}}</strong></td>
+                    <td>{{.BuyingPrice}}</td>
+                    <td style="color: green; font-weight: bold;">{{.GrossProfit}}</td>
+                    <td>{{.ProfitPercentage}}%</td>
+                    <td>
+                        {{if .DocumentPath}}
+                        <a href="/view?file={{.DocumentPath}}" target="_blank" style="text-decoration: none;">📄 View</a>
+                        {{else}}
+                        <span class="no-file">No File</span>
+                        {{end}}
+                    </td>
+                    <td>
+                        <a href="/generate-invoice?id={{.ID}}" target="_blank" style="background-color: #e28743; color: white; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; white-space: nowrap;">🧾 Print</a>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function sortTable(n) {
+    var table = document.getElementById("quotationTable");
+    var rows = table.rows;
+    var switching = true;
+    var direction = "asc"; 
+    var switchcount = 0;
+    
+    while (switching) {
+        switching = false;
+        var r = table.rows;
+        for (var i = 1; i < (r.length - 1); i++) {
+            var x = r[i].getElementsByTagName("TD")[n];
+            var y = r[i+1].getElementsByTagName("TD")[n];
+            
+            var xContent = x.textContent || x.innerText;
+            var yContent = y.textContent || y.innerText;
+            
+            var xNum = parseFloat(xContent.replace(/[^0-9.-]/g, ''));
+            var yNum = parseFloat(yContent.replace(/[^0-9.-]/g, ''));
+            
+            var shouldSwitch = false;
+            if (!isNaN(xNum) && !isNaN(yNum)) {
+                if (direction == "asc" && xNum > yNum) { shouldSwitch = true; break; }
+                if (direction == "desc" && xNum < yNum) { shouldSwitch = true; break; }
+            } else {
+                if (direction == "asc" && xContent.toLowerCase() > yContent.toLowerCase()) { shouldSwitch = true; break; }
+                if (direction == "desc" && xContent.toLowerCase() < yContent.toLowerCase()) { shouldSwitch = true; break; }
+            }
+        }
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
+            switchcount++;      
+        } else {
+            if (switchcount == 0 && direction == "asc") {
+                direction = "desc";
+                switching = true;
+            }
+        }
+    }
+}
+</script>
+</body>
+</html>
