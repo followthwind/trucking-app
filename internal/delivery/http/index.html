@@ -185,7 +185,7 @@
             required
           />
         </div>
-        <div class="full-width">
+        <div>
           <label>To:</label>
           <input
             type="text"
@@ -195,20 +195,46 @@
           />
         </div>
         <div>
-          <label>QTY:</label>
-          <input type="number" name="qty" required />
+          <label>BL Number: </label>
+          <input type="text" name="bl_number" placeholder="" required />
         </div>
         <div>
-          <label>Rate:</label>
-          <input type="number" name="rate" required />
+          <label>Container Number: </label>
+          <input type="text" name="container_number" placeholder="" required />
+        </div>
+        <div>
+          <label>Return To: </label>
+          <input type="text" name="return_to" placeholder="" required />
+        </div>
+        <div>
+          <label>Qty:</label>
+          <input type="number" name="qty" placeholder="0" required />
+        </div>
+        <div>
+          <label>Rate (supir):</label>
+          <input type="number" name="rate" placeholder="10000" required />
+        </div>
+        <div>
+          <label>Rate (LOLO):</label>
+          <input type="number" name="lolo_rate" placeholder="10000" required />
         </div>
         <div>
           <label>Buying Price (Total Modal):</label>
-          <input type="number" name="buying_price" required />
+          <input
+            type="number"
+            name="buying_price"
+            placeholder="10000"
+            required
+          />
         </div>
         <div>
           <label>Upload Document (PDF/Image):</label>
-          <input type="file" name="document" accept="application/pdf,image/*" />
+          <input
+            type="file"
+            name="document"
+            accept="application/pdf,image/*"
+            required
+          />
         </div>
         <div class="full-width">
           <label>Remark Catatan:</label>
@@ -216,6 +242,7 @@
             type="text"
             name="remark"
             placeholder="e.g. Max payload 28ton"
+            required
           />
         </div>
         <button type="submit" class="full-width">

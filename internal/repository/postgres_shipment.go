@@ -22,13 +22,13 @@ func (r *postgresShipmentRepository) Create(ctx context.Context, s *domain.Shipm
 		INSERT INTO shipments (
 			id, item_description, origin, destination, qty, rate, 
 			amount, buying_price, gross_profit, profit_percentage, 
-			remark, document_path, created_at, is_delete
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			remark, document_path, created_at, is_delete, lolo_rate, return_to, bl_number, container_number
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 	`
-	_, err := r.db.ExecContext(ctx, query, 
+	_, err := r.db.ExecContext(ctx, query,
 		s.ID, s.ItemDescription, s.Origin, s.Destination, s.Qty, s.Rate,
 		s.Amount, s.BuyingPrice, s.GrossProfit, s.ProfitPercentage,
-		s.Remark, s.DocumentPath, s.CreatedAt, s.IsDelete,
+		s.Remark, s.DocumentPath, s.CreatedAt, s.IsDelete, s.LoloRate, s.ReturnTo, s.BLNumber, s.ContainerNumber,
 	)
 	return err
 }
@@ -79,8 +79,8 @@ func (r *postgresShipmentRepository) FindByID(ctx context.Context, id string) (*
 }
 
 func (r *postgresShipmentRepository) Delete(ctx context.Context, id string) error {
-    // Mengubah status is_delete menjadi true
-    query := `UPDATE shipments SET is_delete = true WHERE id = $1`
-    _, err := r.db.ExecContext(ctx, query, id)
-    return err
+	// Mengubah status is_delete menjadi true
+	query := `UPDATE shipments SET is_delete = true WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
 }

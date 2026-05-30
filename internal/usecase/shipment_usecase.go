@@ -29,19 +29,19 @@ func (u *shipmentUsecase) InsertShipment(ctx context.Context, s *domain.Shipment
 	// 2. PROSES UPLOAD KE MINIO (Jika manajer mengunggah file)
 	if len(fileData) > 0 {
 		uniqueFileName := s.ID + "-document"
-		
+
 		uploadedName, err := u.docRepo.Upload(ctx, uniqueFileName, fileData, contentType)
 		if err != nil {
 			return err
 		}
-		
+
 		s.DocumentPath = uploadedName
 	}
 
 	// 3. RUMUS FINANSIAL OTOMATIS
 	s.Amount = int64(s.Qty) * s.Rate
 	s.GrossProfit = s.Amount - s.BuyingPrice
-	
+
 	if s.Amount > 0 {
 		s.ProfitPercentage = int((s.GrossProfit * 100) / s.Amount)
 	} else {
@@ -65,5 +65,5 @@ func (u *shipmentUsecase) GetShipmentByID(ctx context.Context, id string) (*doma
 }
 
 func (u *shipmentUsecase) DeleteShipment(ctx context.Context, id string) error {
-    return u.shipmentRepo.Delete(ctx, id)
+	return u.shipmentRepo.Delete(ctx, id)
 }

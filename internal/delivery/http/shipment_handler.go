@@ -35,6 +35,7 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/generate-invoice", h.GenerateInvoice) // <-- Tambahkan rute ini
 	mux.HandleFunc("/delete", h.DeleteShipment)
 }
+
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
 func (h *ShipmentHandler) ShowFormAndTable(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -70,6 +71,7 @@ func (h *ShipmentHandler) SubmitForm(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Ambil data teks biasa dari Form HTML
 	qty, _ := strconv.Atoi(r.FormValue("qty"))
+	loloRate, _ := strconv.ParseInt(r.FormValue("lolo_rate"), 10, 64)
 	rate, _ := strconv.ParseInt(r.FormValue("rate"), 10, 64)
 	buyingPrice, _ := strconv.ParseInt(r.FormValue("buying_price"), 10, 64)
 
@@ -77,8 +79,12 @@ func (h *ShipmentHandler) SubmitForm(w http.ResponseWriter, r *http.Request) {
 		ItemDescription: r.FormValue("item_description"),
 		Origin:          r.FormValue("origin"),
 		Destination:     r.FormValue("destination"),
+		BLNumber:        r.FormValue("bl_number"),
+		ContainerNumber: r.FormValue("container_number"),
+		ReturnTo:        r.FormValue("return_to"),
 		Qty:             qty,
 		Rate:            rate,
+		LoloRate:        loloRate,
 		BuyingPrice:     buyingPrice,
 		Remark:          r.FormValue("remark"),
 	}
@@ -128,7 +134,7 @@ func (h *ShipmentHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 
 	// Set header agar browser tahu ini file dokumen yang mau ditampilkan (bukan didownload mentah-mentah)
 	w.Header().Set("Content-Disposition", "inline; filename="+fileName)
-	
+
 	// Stream datanya langsung ke layar browser
 	io.Copy(w, object)
 }
@@ -206,18 +212,29 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 	pdf.AddPage()
 
 	// ---- HEADER INVOICE ----
-	pdf.SetFont("Arial", "B", 16)
-	pdf.CellFormat(0, 10, "SMART TRUCKING LOGISTICS", "0", 1, "L", false, 0, "")
+
+	pdf.ImageOptions("logos.png", 10, 5, 50, 0, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: false}, 0, "")
+
+	// Cek apakah ada error saat memasukkan gambar
+	if pdf.Err() {
+		http.Error(w, "Gagal memproses gambar: "+pdf.Error().Error(), http.StatusInternalServerError)
+		return
+	}
+
+	pdf.Ln(10)
 	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(0, 5, "Jl. Logistik Terpadu No. 20, Jakarta", "0", 1, "L", false, 0, "")
-	pdf.CellFormat(0, 5, "Email: finance@smartdepo.com | Telp: (021) 889977", "0", 1, "L", false, 0, "")
-	
+	pdf.SetTextColor(0, 122, 204)
+	alamat := "SBU Kawasan, Jalan, Jl. Komp. KBN No.04 Medan Blok C 03, RW.2, Marunda, Kec. Cilincing, Jkt Utara, Daerah Khusus Ibukota Jakarta 14120"
+	pdf.MultiCell(140, 5, alamat, "0", "L", false)
+	pdf.SetTextColor(0, 0, 0)
+
 	// Garis pembatas horizontal
 	pdf.Line(10, 32, 200, 32)
 	pdf.Ln(10)
 
 	// ---- INFO NOTA ----
 	pdf.SetFont("Arial", "B", 14)
+
 	pdf.CellFormat(0, 10, "INVOICE QUOTATION", "0", 1, "C", false, 0, "")
 	pdf.Ln(5)
 
@@ -231,9 +248,9 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 	// Header Tabel PDF
 	pdf.SetFont("Arial", "B", 10)
 	pdf.SetFillColor(240, 240, 240)
-	pdf.CellFormat(80, 8, "Deskripsi Layanan Truk", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(80, 8, "Deskripsi", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(25, 8, "QTY", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(40, 8, "Harga Satuan (Rate)", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(40, 8, "Rate", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(45, 8, "Total Tagihan", "1", 1, "C", true, 0, "")
 
 	// Isi Data Baris Tabel
@@ -249,19 +266,13 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 	pdf.CellFormat(45, 8, "Rp "+strconv.FormatInt(s.Amount, 10), "1", 1, "R", false, 0, "")
 	pdf.Ln(10)
 
-	// Catatan kaki / Remark jika ada
-	if s.Remark != "" {
-		pdf.SetFont("Arial", "I", 9)
-		pdf.CellFormat(0, 5, "Catatan: "+s.Remark, "0", 1, "L", false, 0, "")
-	}
-
 	// ---- TANDA TANGAN ----
 	pdf.Ln(20)
 	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(0, 5, "Hormat Kami,", "0", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 5, "Best Regards,", "0", 1, "R", false, 0, "")
 	pdf.Ln(15)
 	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 5, "( Tim Keuangan SMART ) ", "0", 1, "R", false, 0, "")
+	pdf.CellFormat(0, 5, "( Difania Syafitri ) ", "0", 1, "R", false, 0, "")
 
 	// 3. Set header HTTP dan langsung stream file PDF ke browser tab baru
 	w.Header().Set("Content-Type", "application/pdf")
@@ -270,9 +281,9 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 }
 
 func (h *ShipmentHandler) DeleteShipment(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Query().Get("id")
-    if id != "" {
-        h.usecase.DeleteShipment(r.Context(), id)
-    }
-    http.Redirect(w, r, "/", http.StatusSeeOther)
+	id := r.URL.Query().Get("id")
+	if id != "" {
+		h.usecase.DeleteShipment(r.Context(), id)
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
