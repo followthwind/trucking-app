@@ -89,24 +89,24 @@ func (h *ShipmentHandler) SubmitForm(w http.ResponseWriter, r *http.Request) {
 		Remark:          r.FormValue("remark"),
 	}
 
-	// Buat penampung kosong untuk data file dokumen mentah
-	var fileData []byte
-	var contentType string
+	// // Buat penampung kosong untuk data file dokumen mentah
+	// var fileData []byte
+	// var contentType string
 
-	// 3. Ambil data file dokumen yang di-upload (PDF/Gambar) jika ada
-	file, header, err := r.FormFile("document")
-	if err == nil {
-		defer file.Close()
-		// Baca file menjadi pecahan byte data mentah
-		data, err := io.ReadAll(file)
-		if err == nil {
-			fileData = data
-			contentType = header.Header.Get("Content-Type")
-		}
-	}
+	// // 3. Ambil data file dokumen yang di-upload (PDF/Gambar) jika ada
+	// file, header, err := r.FormFile("document")
+	// if err == nil {
+	// 	defer file.Close()
+	// 	// Baca file menjadi pecahan byte data mentah
+	// 	data, err := io.ReadAll(file)
+	// 	if err == nil {
+	// 		fileData = data
+	// 		contentType = header.Header.Get("Content-Type")
+	// 	}
+	// }
 
 	// 4. Simpan seluruh data teks ke Postgres + upload file mentah ke MinIO via Usecase
-	err = h.usecase.InsertShipment(r.Context(), shipment, fileData, contentType)
+	err = h.usecase.InsertShipment(r.Context(), shipment)
 	if err != nil {
 		http.Error(w, "Gagal memproses data: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -192,6 +192,10 @@ func (h *ShipmentHandler) ExportExcel(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func formatRupiah(amount int64) string {
+	return "Rp " + strconv.FormatInt(amount, 10)
+}
+
 // GenerateInvoice membuat invoice PDF resmi untuk satu shipment tertentu
 func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
@@ -211,75 +215,197 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
-	// ---- HEADER INVOICE ----
+	// ---- HEADER INVOICE (SESUAI GAMBAR BARU) ----
+	// Simpan titik Y awal agar logo dan alamat sejajar secara vertikal
+	headerY := pdf.GetY()
 
-	pdf.ImageOptions("logos.png", 10, 5, 50, 0, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: false}, 0, "")
-
-	// Cek apakah ada error saat memasukkan gambar
+	// Logo SMRT di sebelah kiri (X: 10, Y: headerY + 2)
+	pdf.ImageOptions("logos.png", 10, headerY+2, 55, 0, false, gofpdf.ImageOptions{ImageType: "PNG", ReadDpi: false}, 0, "")
 	if pdf.Err() {
-		http.Error(w, "Gagal memproses gambar: "+pdf.Error().Error(), http.StatusInternalServerError)
+		http.Error(w, "Gagal memproses gambar logo: "+pdf.Error().Error(), http.StatusInternalServerError)
 		return
 	}
 
-	pdf.Ln(10)
-	pdf.SetFont("Arial", "", 10)
-	pdf.SetTextColor(0, 122, 204)
-	alamat := "SBU Kawasan, Jalan, Jl. Komp. KBN No.04 Medan Blok C 03, RW.2, Marunda, Kec. Cilincing, Jkt Utara, Daerah Khusus Ibukota Jakarta 14120"
-	pdf.MultiCell(140, 5, alamat, "0", "L", false)
+	// Blok Alamat Perusahaan di sebelah kanan
+	// Geser X ke 110 (lebar area teks alamat 90mm, sehingga pas mentok kanan di koordinat 200)
+	pdf.SetXY(110, headerY)
+	pdf.SetFont("Arial", "", 9)
 	pdf.SetTextColor(0, 0, 0)
 
-	// Garis pembatas horizontal
-	pdf.Line(10, 32, 200, 32)
-	pdf.Ln(10)
+	// Teks alamat dicetak baris demi baris menggunakan MultiCell dengan perataan kanan ("R")
+	alamatPT := "Jalan Medan Blok C 03-04 KBN SBU Kawasan\nMarunda Kel. Cilincing Kec. Cilincing Kota Adm.\nJakarta Utara Prov. DKI Jakarta, 14120\nTel +62-21-22419139\nTel +62-21-22419167"
+	pdf.MultiCell(90, 4.5, alamatPT, "0", "R", false)
 
-	// ---- INFO NOTA ----
-	pdf.SetFont("Arial", "B", 14)
+	// Tautan website dengan warna biru muda (Cyan-ish) persis seperti di gambar
+	pdf.SetX(110)
+	pdf.SetTextColor(0, 162, 232)
+	pdf.CellFormat(90, 5, "www.smartidlogistics.com", "0", 1, "R", false, 0, "")
+	pdf.SetTextColor(0, 0, 0) // Reset warna teks ke hitam
 
-	pdf.CellFormat(0, 10, "INVOICE QUOTATION", "0", 1, "C", false, 0, "")
+	// Garis pembatas horizontal biru tipis di bawah header
+	pdf.SetDrawColor(0, 123, 255)
+	pdf.SetLineWidth(0.4)
+	pdf.Line(10, pdf.GetY()+2, 200, pdf.GetY()+2)
+	pdf.SetDrawColor(0, 0, 0) // Reset warna border ke default
+	pdf.SetLineWidth(0.2)     // Reset ketebalan border ke default
+	pdf.Ln(8)
+
+	// ---- INFO INVOICE ----
+	pdf.SetFont("Courier", "B", 16)
+	pdf.SetTextColor(0, 86, 179)
+	pdf.CellFormat(0, 10, "QUOTATION", "0", 1, "C", false, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+	pdf.Ln(2)
+
+	// Metadata Dokumen (Sekarang Rapi di Sebelah Kiri)
+	pdf.SetFont("Courier", "", 10)
+
+	// Sisi Kiri: Informasi utama dokumen
+	pdf.CellFormat(30, 6, "Invoice No", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(5, 6, ":", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 6, "INV/"+s.CreatedAt.Format("20060102")+"/"+s.ID[:8], "0", 1, "L", false, 0, "")
+
+	pdf.CellFormat(30, 6, "Date", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(5, 6, ":", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 6, s.CreatedAt.Format("02 Jan 2006"), "0", 1, "L", false, 0, "")
 	pdf.Ln(5)
 
-	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(50, 6, "Invoice ID: "+s.ID[:8], "0", 0, "L", false, 0, "") // ambil 8 digit depan UUID
-	pdf.CellFormat(0, 6, "Tanggal: "+s.CreatedAt.Format("02 Jan 2006"), "0", 1, "R", false, 0, "")
-	pdf.CellFormat(50, 6, "Rute Operasional: "+s.Origin+" Ke "+s.Destination, "0", 1, "L", false, 0, "")
-	pdf.Ln(5)
+	// ---- TABEL RINCIAN BIAYA (8 KOLOM - TANPA KOLOM TOTAL) ----
+	pdf.SetFont("Courier", "B", 9)
+	pdf.SetFillColor(0, 123, 255)   // WARNA BIRU UTAMA
+	pdf.SetTextColor(255, 255, 255) // TEKS PUTIH
 
-	// ---- TABEL RINCIAN HARGA ----
-	// Header Tabel PDF
-	pdf.SetFont("Arial", "B", 10)
-	pdf.SetFillColor(240, 240, 240)
-	pdf.CellFormat(80, 8, "Deskripsi", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(25, 8, "QTY", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(40, 8, "Rate", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(45, 8, "Total Tagihan", "1", 1, "C", true, 0, "")
+	// Distribusi ulang lebar kolom setelah kolom 'Total' dihapus (Total pas 190mm)
+	wItem := 30.0
+	wFrom := 25.0
+	wTo := 40.0
+	wQty := 12.0
+	wRate := 25.0
+	wAmount := 25.0
+	wVat := 18.0
+	wRemark := 15.0
 
-	// Isi Data Baris Tabel
-	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(80, 8, " "+s.ItemDescription, "1", 0, "L", false, 0, "")
-	pdf.CellFormat(25, 8, strconv.Itoa(s.Qty), "1", 0, "C", false, 0, "")
-	pdf.CellFormat(40, 8, "Rp "+strconv.FormatInt(s.Rate, 10), "1", 0, "R", false, 0, "")
-	pdf.CellFormat(45, 8, "Rp "+strconv.FormatInt(s.Amount, 10), "1", 1, "R", false, 0, "")
+	// Print Header Tabel Berwarna Biru
+	pdf.CellFormat(wItem, 8, "Item", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wFrom, 8, "From", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wTo, 8, "To", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wQty, 8, "QTY", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wRate, 8, "Rate", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wAmount, 8, "Amount", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wVat, 8, "VAT (11%)", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(wRemark, 8, "Remark", "1", 1, "C", true, 0, "")
 
-	// Total Besar di bawah tabel
-	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(145, 8, "GRAND TOTAL  ", "1", 0, "R", false, 0, "")
-	pdf.CellFormat(45, 8, "Rp "+strconv.FormatInt(s.Amount, 10), "1", 1, "R", false, 0, "")
+	// Balikkan teks ke Hitam untuk isi data
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFont("Courier", "", 8)
+
+	// Hitung VAT 11% & Grand Total
+	vatAmount := (s.Amount * 11) / 100
+	grandTotal := s.Amount + vatAmount
+
+	// Ambil koordinat Y awal sebelum MultiCell menggambar
+	startY := pdf.GetY()
+
+	// Kolom 1: Item
+	pdf.SetXY(10, startY)
+	pdf.MultiCell(wItem, 5, s.ItemDescription, "0", "L", false)
+	h1 := pdf.GetY() - startY
+
+	// Kolom 2: From
+	pdf.SetXY(10+wItem, startY)
+	pdf.MultiCell(wFrom, 5, s.Origin, "0", "C", false)
+	h2 := pdf.GetY() - startY
+
+	// Kolom 3: To (Alamat Panjang)
+	pdf.SetXY(10+wItem+wFrom, startY)
+	pdf.MultiCell(wTo, 4, s.Destination, "0", "L", false)
+	h3 := pdf.GetY() - startY
+
+	// Kolom 4: QTY
+	pdf.SetXY(10+wItem+wFrom+wTo, startY)
+	pdf.MultiCell(wQty, 5, strconv.Itoa(s.Qty), "0", "C", false)
+	h4 := pdf.GetY() - startY
+
+	// Kolom 5: Rate
+	pdf.SetXY(10+wItem+wFrom+wTo+wQty, startY)
+	pdf.MultiCell(wRate, 5, formatRupiah(s.Rate), "0", "R", false)
+	h5 := pdf.GetY() - startY
+
+	// Kolom 6: Amount
+	pdf.SetXY(10+wItem+wFrom+wTo+wQty+wRate, startY)
+	pdf.MultiCell(wAmount, 5, formatRupiah(s.Amount), "0", "R", false)
+	h6 := pdf.GetY() - startY
+
+	// Kolom 7: VAT (11%)
+	pdf.SetXY(10+wItem+wFrom+wTo+wQty+wRate+wAmount, startY)
+	pdf.MultiCell(wVat, 5, formatRupiah(vatAmount), "0", "R", false)
+	h7 := pdf.GetY() - startY
+
+	// Kolom 8: Remark
+	pdf.SetXY(10+wItem+wFrom+wTo+wQty+wRate+wAmount+wVat, startY)
+	pdf.MultiCell(wRemark, 4, s.Remark, "0", "L", false)
+	h9 := pdf.GetY() - startY
+
+	// Cari baris tertinggi agar tinggi border kotak dinamis seimbang
+	maxHeight := h1
+	heights := []float64{h2, h3, h4, h5, h6, h7, h9}
+	for _, h := range heights {
+		if h > maxHeight {
+			maxHeight = h
+		}
+	}
+	maxHeight += 3 // Padding bawah biar rapi
+
+	// Gambar garis border pembatas luar (Grid Box)
+	currentX := 10.0
+	widths := []float64{wItem, wFrom, wTo, wQty, wRate, wAmount, wVat, wRemark}
+	for _, w := range widths {
+		pdf.Rect(currentX, startY, w, maxHeight, "D")
+		currentX += w
+	}
+
+	// Set posisi Y ke paling bawah tabel setelah membuat grid box
+	pdf.SetY(startY + maxHeight)
+
+	// ---- GRAND TOTAL ----
+	pdf.SetFont("Courier", "B", 10)
+	// Lebar total penampung text kiri disesuaikan (190mm - 35mm = 155mm)
+	pdf.CellFormat(157, 8, "GRAND TOTAL (IDR)  ", "1", 0, "R", false, 0, "")
+
+	// Tampilkan total akumulasi akhir di kolom terakhir selebar 35mm
+	pdf.SetTextColor(0, 86, 179)
+	pdf.CellFormat(33, 8, formatRupiah(grandTotal), "1", 1, "R", false, 0, "")
+	pdf.SetTextColor(0, 0, 0) // Reset kembali ke hitam
+
+	pdf.Ln(4)
+
+	// ---- AREA TANDA TANGAN + DIGITAL SIGNATURE ----
 	pdf.Ln(10)
+	pdf.SetFont("Courier", "", 10)
 
-	// ---- TANDA TANGAN ----
-	pdf.Ln(20)
-	pdf.SetFont("Arial", "", 10)
-	pdf.CellFormat(0, 5, "Best Regards,", "0", 1, "R", false, 0, "")
-	pdf.Ln(15)
-	pdf.SetFont("Arial", "B", 10)
-	pdf.CellFormat(0, 5, "( Difania Syafitri ) ", "0", 1, "R", false, 0, "")
+	pdf.CellFormat(130, 5, "", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 5, "Jakarta, "+s.CreatedAt.Format("02 Jan 2006"), "0", 1, "C", false, 0, "")
 
-	// 3. Set header HTTP dan langsung stream file PDF ke browser tab baru
+	// --- PROSES INSERT GAMBAR TANDA TANGAN ---
+	sigY := pdf.GetY() + 2
+	pdf.ImageOptions("tertanda.jpg", 158, sigY, 30, 0, false, gofpdf.ImageOptions{ImageType: "JPEG", ReadDpi: false}, 0, "")
+
+	if pdf.Err() {
+		http.Error(w, "Gagal memproses gambar tanda tangan: "+pdf.Error().Error(), http.StatusInternalServerError)
+		return
+	}
+
+	pdf.Ln(28)
+
+	pdf.SetFont("Courier", "B", 10)
+	pdf.CellFormat(130, 5, "", "0", 0, "L", false, 0, "")
+	pdf.CellFormat(60, 5, "( Wiwi Wiliyani )", "0", 1, "C", false, 0, "")
+
+	// 3. Output stream PDF langsung ke browser tab baru
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "inline; filename=Invoice_"+s.ID[:8]+".pdf")
 	pdf.Output(w)
 }
-
 func (h *ShipmentHandler) DeleteShipment(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id != "" {

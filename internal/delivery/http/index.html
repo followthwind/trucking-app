@@ -92,11 +92,14 @@
         width: 100%;
         overflow-x: auto;
         margin-top: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
       }
       table {
         width: 100%;
-        border-collapse: collapse;
-        table-layout: fixed;
+        border-collapse: separate; /* Menggunakan separate agar sticky border berfungsi sempurna */
+        border-spacing: 0;
+        min-width: 1500px; /* Memaksa tabel memanjang ke kanan agar memicu scrollbar */
       }
       th,
       td {
@@ -119,62 +122,178 @@
       tr:nth-child(even) {
         background-color: #f2f2f2;
       }
+
+      .sticky-col {
+        position: sticky;
+        right: 0;
+        background-color: white !important; /* Mencegah tembus pandang saat ditimpa baris data */
+        border-left: 2px solid #bbb; /* Garis vertikal pembatas tegas */
+        z-index: 2;
+      }
+
+      th.sticky-col {
+        background-color: #0069d9 !important; /* Warna header khusus kolom aksi */
+        z-index: 3; /* Lebih tinggi dari td agar tidak tertimpa saat scroll vertikal */
+      }
+
+      tr:nth-child(even) .sticky-col {
+        background-color: #f2f2f2 !important; /* Menjaga konsistensi zebra-striping */
+      }
       .no-file {
         color: #999;
         font-style: italic;
       }
-
-      /* Atur Alokasi Lebar Kolom Secara Proporsional (Total 100%) */
+      /* Alokasi Lebar Kolom Data */
       .col-item {
-        width: 15%;
+        width: 140px;
       }
       .col-from {
-        width: 10%;
+        width: 100px;
       }
       .col-to {
-        width: 15%;
+        width: 180px;
       }
       .col-bl {
-        width: 15%;
+        width: 120px;
       }
       .col-containerno {
-        width: 15%;
+        width: 130px;
       }
       .col-returnto {
-        width: 15%;
+        width: 110px;
       }
       .col-qty {
-        width: 7%;
+        width: 60px;
       }
       .col-rate {
-        width: 10%;
+        width: 110px;
       }
       .col-ratelolo {
-        width: 10%;
+        width: 110px;
       }
       .col-selling {
-        width: 11%;
+        width: 120px;
       }
       .col-buying {
-        width: 10%;
+        width: 110px;
       }
       .col-profit {
-        width: 10%;
+        width: 110px;
       }
       .col-remark {
-        width: 10%;
+        width: 140px;
       }
       .col-percent {
-        width: 6%;
+        width: 60px;
       }
       .col-doc {
-        width: 10%;
+        width: 90px;
       }
-      .col-inv {
-        width: 10%;
-      }
+
+      /* Kolom aksi digabung jadi satu wadah melayang selebar 280px */
       .col-action {
-        width: 10%;
+        width: 300px;
+      }
+
+      /* Styling Khusus Tombol-Tombol Aksi Kecil */
+      .action-wrapper {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .btn-action {
+        color: white;
+        text-decoration: none;
+        padding: 5px 8px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 11px;
+        white-space: nowrap;
+        display: inline-block;
+      }
+      .btn-view {
+        background-color: #17a2b8;
+      }
+      .btn-edit {
+        background-color: #ffc107;
+        color: #212529;
+      }
+      .btn-quotation {
+        background-color: #e28743;
+      }
+      .btn-invoice {
+        background-color: #28a745;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+      }
+
+      .modal-overlay {
+        display: none; /* Tersembunyi secara default */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(
+          0,
+          0,
+          0,
+          0.5
+        ); /* Latar belakang agak hitam transparan */
+        z-index: 9999; /* Pastikan berada di atas tabel sticky */
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background-color: white;
+        padding: 25px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 650px; /* Lebar maksimal kotak pop-up */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        box-sizing: border-box;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        color: #333;
+      }
+
+      .close-modal {
+        font-size: 28px;
+        font-weight: bold;
+        color: #aaa;
+        cursor: pointer;
+      }
+
+      .close-modal:hover {
+        color: black;
+      }
+
+      .modal-section-title {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 12px;
+        color: #007bff;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .modal-grid-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
       }
     </style>
   </head>
@@ -209,7 +328,7 @@
             required
           />
         </div>
-        <div>
+        <!-- <div>
           <label>BL Number: </label>
           <input type="text" name="bl_number" placeholder="" required />
         </div>
@@ -220,16 +339,16 @@
         <div>
           <label>Return To: </label>
           <input type="text" name="return_to" placeholder="" required />
-        </div>
+        </div> -->
         <div>
           <label>Qty:</label>
           <input type="number" name="qty" placeholder="0" required />
         </div>
         <div>
-          <label>Rate (supir):</label>
+          <label>Rate:</label>
           <input type="number" name="rate" placeholder="10000" required />
         </div>
-        <div>
+        <!-- <div>
           <label>Rate (LOLO):</label>
           <input type="number" name="lolo_rate" placeholder="10000" required />
         </div>
@@ -241,8 +360,8 @@
             placeholder="10000"
             required
           />
-        </div>
-        <div>
+        </div> -->
+        <!-- <div>
           <label>Upload Document (PDF/Image):</label>
           <input
             type="file"
@@ -250,7 +369,7 @@
             accept="application/pdf,image/*"
             required
           />
-        </div>
+        </div> -->
         <div class="full-width">
           <label>Remark Catatan:</label>
           <input
@@ -260,9 +379,7 @@
             required
           />
         </div>
-        <button type="submit" class="full-width">
-          Save & Calculate Quotation
-        </button>
+        <button type="submit" class="full-width">ADD QUOTATION</button>
       </form>
 
       <div class="table-header-container">
@@ -274,27 +391,22 @@
         <table id="quotationTable">
           <thead>
             <tr>
-              <th class="col-item" onclick="sortTable(0)">Item ⇅</th>
-              <th class="col-from" onclick="sortTable(1)">From ⇅</th>
-              <th class="col-to" onclick="sortTable(2)">To ⇅</th>
-              <th class="col-bl" onclick="sortTable(3)">BL No ⇅</th>
-              <th class="col-containerno" onclick="sortTable(4)">
-                Container No ⇅
-              </th>
-              <th class="col-returnto" onclick="sortTable(5)">Return To ⇅</th>
-              <th class="col-qty" onclick="sortTable(6)">QTY ⇅</th>
-              <th class="col-rate" onclick="sortTable(7)">Rate Supir ⇅</th>
-              <th class="col-ratelolo" onclick="sortTable(8)">Rate LOLO ⇅</th>
-              <th class="col-selling" onclick="sortTable(9)">
-                Selling Price ⇅
-              </th>
-              <th class="col-buying" onclick="sortTable(10)">Buying Price ⇅</th>
-              <th class="col-profit" onclick="sortTable(11)">Gross Profit ⇅</th>
-              <th class="col-remark" onclick="sortTable(12)">Remark ⇅</th>
-              <th class="col-percent" onclick="sortTable(13)">% ⇅</th>
+              <th class="col-item">Item</th>
+              <th class="col-from">From</th>
+              <th class="col-to">To</th>
+              <th class="col-bl">BL No</th>
+              <th class="col-containerno">Container No</th>
+              <th class="col-returnto">Return To</th>
+              <th class="col-qty">QTY</th>
+              <th class="col-rate">Rate</th>
+              <th class="col-ratelolo">Rate LOLO</th>
+              <th class="col-selling">Selling Price</th>
+              <th class="col-buying">Buying Price</th>
+              <th class="col-profit">Gross Profit</th>
+              <th class="col-remark">Remark</th>
+              <th class="col-percent">%</th>
               <th class="col-doc">Document</th>
-              <th class="col-inv">Invoice</th>
-              <th class="col-action">Action</th>
+              <th class="col-action sticky-col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -319,43 +431,203 @@
                 <a
                   href="/view?file={{.DocumentPath}}"
                   target="_blank"
-                  style="text-decoration: none"
+                  class="btn-action btn-view"
                   >📄 View</a
                 >
                 {{else}}
                 <span class="no-file">No File</span>
                 {{end}}
               </td>
-              <td>
-                <a
-                  href="/generate-invoice?id={{.ID}}"
-                  target="_blank"
-                  style="
-                    background-color: #e28743;
-                    color: white;
-                    text-decoration: none;
-                    padding: 4px 2px;
-                    border-radius: 2px;
-                    font-weight: bold;
-                    font-size: 11px;
-                    display: inline-block;
-                    white-space: nowrap;
-                  "
-                  >🧾 Print</a
-                >
-              </td>
-              <td>
-                <a
-                  href="/delete?id={{.ID}}"
-                  onclick="return confirm('Yakin ingin menghapus data ini?');"
-                  style="color: red; font-weight: bold; text-decoration: none"
-                  >Delete</a
-                >
+              <td class="sticky-col">
+                <div class="action-wrapper">
+                  <a
+                    href="javascript:void(0);"
+                    onclick="openEditModal('{{.ID}}', '{{.ItemDescription}}', '{{.Qty}}', '{{.Origin}}', '{{.Destination}}', '{{.Rate}}', '{{.Remark}}', '{{.BLNumber}}', '{{.ContainerNumber}}', '{{.ReturnTo}}', '{{.LoloRate}}', '{{.BuyingPrice}}')"
+                    style="
+                      color: #ffc107;
+                      font-weight: bold;
+                      text-decoration: none;
+                    "
+                  >
+                    Edit
+                  </a>
+                  <span style="color: #ccc">|</span>
+                  <a
+                    href="/generate-invoice?id={{.ID}}&type=quotation"
+                    target="_blank"
+                    style="
+                      color: #e28743;
+                      font-weight: bold;
+                      text-decoration: none;
+                    "
+                    >Quotation</a
+                  >
+                  <span style="color: #ccc">|</span>
+                  <a
+                    href="/generate-invoice?id={{.ID}}&type=invoice"
+                    target="_blank"
+                    style="
+                      color: #28a745;
+                      font-weight: bold;
+                      text-decoration: none;
+                    "
+                    >Invoice</a
+                  >
+                  <span style="color: #ccc">|</span>
+                  <a
+                    href="/delete?id={{.ID}}"
+                    onclick="return confirm('Yakin ingin menghapus data ini?');"
+                    style="
+                      color: #dc3545;
+                      font-weight: bold;
+                      text-decoration: none;
+                    "
+                    >Delete</a
+                  >
+                </div>
               </td>
             </tr>
             {{end}}
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div id="editModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Quotation / Invoice Data</h3>
+          <span class="close-modal" onclick="closeEditModal()">&times;</span>
+        </div>
+
+        <form action="/update" method="POST" style="display: block">
+          <input type="hidden" id="edit_id" name="id" />
+
+          <div class="modal-section-title">Data Operasional (Manager)</div>
+          <div class="modal-grid-2col">
+            <div>
+              <label>Item Description:</label>
+              <input
+                type="text"
+                id="edit_item"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+            <div>
+              <label>Qty:</label>
+              <input
+                type="number"
+                id="edit_qty"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+            <div>
+              <label>From (Origin):</label>
+              <input
+                type="text"
+                id="edit_origin"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+            <div>
+              <label>To (Destination):</label>
+              <input
+                type="text"
+                id="edit_destination"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+            <div>
+              <label>Selling Rate (IDR):</label>
+              <input
+                type="number"
+                id="edit_rate"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+            <div>
+              <label>Remark (Catatan):</label>
+              <input
+                type="text"
+                id="edit_remark"
+                readonly
+                style="background-color: #eee; cursor: not-allowed"
+              />
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
+
+          <div class="modal-section-title" style="color: #28a745">
+            Data Internal & Keuangan (Finance)
+          </div>
+          <div class="modal-grid-2col">
+            <div>
+              <label>BL Number:</label>
+              <input
+                type="text"
+                id="edit_bl_number"
+                name="bl_number"
+                placeholder="Masukkan No. BL"
+              />
+            </div>
+            <div>
+              <label>Container Number:</label>
+              <input
+                type="text"
+                id="edit_container_number"
+                name="container_number"
+                placeholder="Masukkan No. Container"
+              />
+            </div>
+            <div>
+              <label>Return To:</label>
+              <input
+                type="text"
+                id="edit_return_to"
+                name="return_to"
+                placeholder="Tempat pengembalian container"
+              />
+            </div>
+            <div>
+              <label>Rate LOLO (IDR):</label>
+              <input
+                type="number"
+                id="edit_lolo_rate"
+                name="lolo_rate"
+                placeholder="0"
+              />
+            </div>
+            <div class="full-width" style="grid-column: span 2">
+              <label>Buying Price / Modal Vendor (IDR):</label>
+              <input
+                type="number"
+                id="edit_buying_price"
+                name="buying_price"
+                placeholder="0"
+                required
+              />
+            </div>
+          </div>
+
+          <div style="margin-top: 25px; text-align: right">
+            <button
+              type="button"
+              onclick="closeEditModal()"
+              style="background-color: #6c757d; margin-right: 10px"
+            >
+              Batal
+            </button>
+            <button type="submit" style="background-color: #28a745">
+              Simpan Perubahan
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -419,6 +691,53 @@
           }
         }
       }
+
+      function openEditModal(
+        id,
+        item,
+        qty,
+        origin,
+        dest,
+        rate,
+        remark,
+        bl,
+        container,
+        returnTo,
+        lolo,
+        buying,
+      ) {
+        // Masukkan data ke input field di dalam modal
+        document.getElementById("edit_id").value = id;
+        document.getElementById("edit_item").value = item;
+        document.getElementById("edit_qty").value = qty;
+        document.getElementById("edit_origin").value = origin;
+        document.getElementById("edit_destination").value = dest;
+        document.getElementById("edit_rate").value = rate;
+        document.getElementById("edit_remark").value = remark;
+
+        // Data Finance yang bisa di-edit kembali jika sebelumnya sudah diisi
+        document.getElementById("edit_bl_number").value = bl;
+        document.getElementById("edit_container_number").value = container;
+        document.getElementById("edit_return_to").value = returnTo;
+        document.getElementById("edit_lolo_rate").value = lolo;
+        document.getElementById("edit_buying_price").value = buying;
+
+        // Ubah display modal dari 'none' menjadi 'flex' agar muncul di tengah layar
+        document.getElementById("editModal").style.display = "flex";
+      }
+
+      // Fungsi untuk menutup Pop-Up
+      function closeEditModal() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      // Opsional: Menutup pop-up secara otomatis jika user mengklik area hitam di luar kotak form
+      window.onclick = function (event) {
+        var modal = document.getElementById("editModal");
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
     </script>
   </body>
 </html>

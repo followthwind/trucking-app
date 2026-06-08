@@ -22,21 +22,21 @@ func NewShipmentUsecase(repo domain.ShipmentRepository, docRepo domain.DocumentR
 }
 
 // InsertShipment memproses kalkulasi dan menyimpan data + file dokumen
-func (u *shipmentUsecase) InsertShipment(ctx context.Context, s *domain.Shipment, fileData []byte, contentType string) error {
+func (u *shipmentUsecase) InsertShipment(ctx context.Context, s *domain.Shipment) error {
 	// 1. Generate ID unik otomatis menggunakan UUID
 	s.ID = uuid.New().String()
 
-	// 2. PROSES UPLOAD KE MINIO (Jika manajer mengunggah file)
-	if len(fileData) > 0 {
-		uniqueFileName := s.ID + "-document"
+	// // 2. PROSES UPLOAD KE MINIO (Jika manajer mengunggah file)
+	// if len(fileData) > 0 {
+	// 	uniqueFileName := s.ID + "-document"
 
-		uploadedName, err := u.docRepo.Upload(ctx, uniqueFileName, fileData, contentType)
-		if err != nil {
-			return err
-		}
+	// 	uploadedName, err := u.docRepo.Upload(ctx, uniqueFileName, fileData, contentType)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		s.DocumentPath = uploadedName
-	}
+	// 	s.DocumentPath = uploadedName
+	// }
 
 	// 3. RUMUS FINANSIAL OTOMATIS
 	s.Amount = int64(s.Qty) * s.Rate
@@ -53,6 +53,42 @@ func (u *shipmentUsecase) InsertShipment(ctx context.Context, s *domain.Shipment
 
 	// 5. Kirim ke PostgreSQL repo (Hanya mengirim 2 argumen: ctx dan s)
 	return u.shipmentRepo.Create(ctx, s)
+}
+
+func (u *shipmentUsecase) UpdateShipment(ctx context.Context, s *domain.Shipment, fileData []byte, contentType string) error {
+
+	existing, err := u.shipmentRepo.FindByID(ctx, s.ID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Hitung ulang finansial secara lengkap
+	existing.BuyingPrice = s.BuyingPrice
+	existing.LoloRate = s.LoloRate
+	existing.ReturnTo = s.ReturnTo
+	existing.BLNumber = s.BLNumber
+	existing.ContainerNumber = s.ContainerNumber
+
+	// Rumus Finansial
+	existing.GrossProfit = existing.Amount - s.BuyingPrice
+	if existing.Amount > 0 {
+		existing.ProfitPercentage = int((existing.GrossProfit * 100) / existing.Amount)
+	}
+
+	// Ubah status menjadi INVOICED karena data sudah lengkap
+	existing.Status = domain.StatusProcess
+
+	// 3. Jika ada upload file invoice/bukti baru dari finance
+	if len(fileData) > 0 {
+		uniqueFileName := s.ID + "-invoice"
+		uploadedName, err := u.docRepo.Upload(ctx, uniqueFileName, fileData, contentType)
+		if err != nil {
+			return err
+		}
+		existing.DocumentPath = uploadedName
+	}
+
+	return u.shipmentRepo.Update(ctx, existing)
 }
 
 // GetAllShipments menarik daftar semua data dari database
