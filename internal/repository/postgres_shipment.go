@@ -38,7 +38,7 @@ func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shi
 	query := `
         SELECT id, item_description, origin, destination, qty, rate, 
         amount, buying_price, gross_profit, profit_percentage, 
-        remark, document_path, created_at 
+        remark, document_path, created_at, lolo_rate, return_to, bl_number, container_number
         FROM shipments 
         WHERE is_delete = false 
         ORDER BY created_at DESC
@@ -55,7 +55,7 @@ func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shi
 		err := rows.Scan(
 			&s.ID, &s.ItemDescription, &s.Origin, &s.Destination, &s.Qty, &s.Rate,
 			&s.Amount, &s.BuyingPrice, &s.GrossProfit, &s.ProfitPercentage,
-			&s.Remark, &s.DocumentPath, &s.CreatedAt,
+			&s.Remark, &s.DocumentPath, &s.CreatedAt, &s.LoloRate, &s.ReturnTo, &s.BLNumber, &s.ContainerNumber,
 		)
 		if err != nil {
 			return nil, err

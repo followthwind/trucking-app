@@ -134,10 +134,22 @@
       .col-to {
         width: 15%;
       }
+      .col-bl {
+        width: 15%;
+      }
+      .col-containerno {
+        width: 15%;
+      }
+      .col-returnto {
+        width: 15%;
+      }
       .col-qty {
         width: 7%;
       }
       .col-rate {
+        width: 10%;
+      }
+      .col-ratelolo {
         width: 10%;
       }
       .col-selling {
@@ -147,6 +159,9 @@
         width: 10%;
       }
       .col-profit {
+        width: 10%;
+      }
+      .col-remark {
         width: 10%;
       }
       .col-percent {
@@ -262,14 +277,21 @@
               <th class="col-item" onclick="sortTable(0)">Item ⇅</th>
               <th class="col-from" onclick="sortTable(1)">From ⇅</th>
               <th class="col-to" onclick="sortTable(2)">To ⇅</th>
-              <th class="col-qty" onclick="sortTable(3)">QTY ⇅</th>
-              <th class="col-rate" onclick="sortTable(4)">Rate ⇅</th>
-              <th class="col-selling" onclick="sortTable(5)">
+              <th class="col-bl" onclick="sortTable(3)">BL No ⇅</th>
+              <th class="col-containerno" onclick="sortTable(4)">
+                Container No ⇅
+              </th>
+              <th class="col-returnto" onclick="sortTable(5)">Return To ⇅</th>
+              <th class="col-qty" onclick="sortTable(6)">QTY ⇅</th>
+              <th class="col-rate" onclick="sortTable(7)">Rate Supir ⇅</th>
+              <th class="col-ratelolo" onclick="sortTable(8)">Rate LOLO ⇅</th>
+              <th class="col-selling" onclick="sortTable(9)">
                 Selling Price ⇅
               </th>
-              <th class="col-buying" onclick="sortTable(6)">Buying Price ⇅</th>
-              <th class="col-profit" onclick="sortTable(7)">Gross Profit ⇅</th>
-              <th class="col-percent" onclick="sortTable(8)">% ⇅</th>
+              <th class="col-buying" onclick="sortTable(10)">Buying Price ⇅</th>
+              <th class="col-profit" onclick="sortTable(11)">Gross Profit ⇅</th>
+              <th class="col-remark" onclick="sortTable(12)">Remark ⇅</th>
+              <th class="col-percent" onclick="sortTable(13)">% ⇅</th>
               <th class="col-doc">Document</th>
               <th class="col-inv">Invoice</th>
               <th class="col-action">Action</th>
@@ -281,11 +303,16 @@
               <td>{{.ItemDescription}}</td>
               <td>{{.Origin}}</td>
               <td>{{.Destination}}</td>
+              <td>{{.BLNumber}}</td>
+              <td>{{.ContainerNumber}}</td>
+              <td>{{.ReturnTo}}</td>
               <td>{{.Qty}}</td>
               <td>{{.Rate}}</td>
+              <td>{{.LoloRate}}</td>
               <td><strong>{{.Amount}}</strong></td>
               <td>{{.BuyingPrice}}</td>
               <td style="color: green; font-weight: bold">{{.GrossProfit}}</td>
+              <td>{{.Remark}}</td>
               <td>{{.ProfitPercentage}}%</td>
               <td>
                 {{if .DocumentPath}}
@@ -307,8 +334,8 @@
                     background-color: #e28743;
                     color: white;
                     text-decoration: none;
-                    padding: 4px 8px;
-                    border-radius: 4px;
+                    padding: 4px 2px;
+                    border-radius: 2px;
                     font-weight: bold;
                     font-size: 11px;
                     display: inline-block;
@@ -322,7 +349,7 @@
                   href="/delete?id={{.ID}}"
                   onclick="return confirm('Yakin ingin menghapus data ini?');"
                   style="color: red; font-weight: bold; text-decoration: none"
-                  >🗑️ Delete</a
+                  >Delete</a
                 >
               </td>
             </tr>
