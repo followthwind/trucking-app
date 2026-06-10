@@ -463,16 +463,6 @@
                     >Quotation</a
                   >
                   <span style="color: #ccc">|</span>
-                  <a
-                    href="/generate-invoice?id={{.ID}}&type=invoice"
-                    target="_blank"
-                    style="
-                      color: #28a745;
-                      font-weight: bold;
-                      text-decoration: none;
-                    "
-                    >Invoice</a
-                  >
                   <span style="color: #ccc">|</span>
                   <a
                     href="/delete?id={{.ID}}"
@@ -484,6 +474,12 @@
                     "
                     >Delete</a
                   >
+                  <span style="color: #ccc">|</span>
+<select autocomplete="off" onchange="updateStatus('{{.ID}}', this)" style="width: auto; padding: 4px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer;">
+          <option value="PENDING" {{if eq .Status "PENDING"}}selected{{end}}>PENDING</option>
+          <option value="INVOICING" {{if eq .Status "INVOICING"}}selected{{end}}>INVOICING</option>
+          <option value="SUBMIT OA DONE" {{if eq .Status "SUBMIT OA DONE"}}selected{{end}}>SUBMIT OA DONE</option>
+        </select>
                 </div>
               </td>
             </tr>
@@ -493,144 +489,97 @@
       </div>
     </div>
 
-    <div id="editModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Edit Quotation / Invoice Data</h3>
-          <span class="close-modal" onclick="closeEditModal()">&times;</span>
-        </div>
-
-        <form action="/update" method="POST" style="display: block">
-          <input type="hidden" id="edit_id" name="id" />
-
-          <div class="modal-section-title">Data Operasional (Manager)</div>
-          <div class="modal-grid-2col">
-            <div>
-              <label>Item Description:</label>
-              <input
-                type="text"
-                id="edit_item"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-            <div>
-              <label>Qty:</label>
-              <input
-                type="number"
-                id="edit_qty"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-            <div>
-              <label>From (Origin):</label>
-              <input
-                type="text"
-                id="edit_origin"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-            <div>
-              <label>To (Destination):</label>
-              <input
-                type="text"
-                id="edit_destination"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-            <div>
-              <label>Selling Rate (IDR):</label>
-              <input
-                type="number"
-                id="edit_rate"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-            <div>
-              <label>Remark (Catatan):</label>
-              <input
-                type="text"
-                id="edit_remark"
-                readonly
-                style="background-color: #eee; cursor: not-allowed"
-              />
-            </div>
-          </div>
-
-          <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
-
-          <div class="modal-section-title" style="color: #28a745">
-            Data Internal & Keuangan (Finance)
-          </div>
-          <div class="modal-grid-2col">
-            <div>
-              <label>BL Number:</label>
-              <input
-                type="text"
-                id="edit_bl_number"
-                name="bl_number"
-                placeholder="Masukkan No. BL"
-              />
-            </div>
-            <div>
-              <label>Container Number:</label>
-              <input
-                type="text"
-                id="edit_container_number"
-                name="container_number"
-                placeholder="Masukkan No. Container"
-              />
-            </div>
-            <div>
-              <label>Return To:</label>
-              <input
-                type="text"
-                id="edit_return_to"
-                name="return_to"
-                placeholder="Tempat pengembalian container"
-              />
-            </div>
-            <div>
-              <label>Rate LOLO (IDR):</label>
-              <input
-                type="number"
-                id="edit_lolo_rate"
-                name="lolo_rate"
-                placeholder="0"
-              />
-            </div>
-            <div class="full-width" style="grid-column: span 2">
-              <label>Buying Price / Modal Vendor (IDR):</label>
-              <input
-                type="number"
-                id="edit_buying_price"
-                name="buying_price"
-                placeholder="0"
-                required
-              />
-            </div>
-          </div>
-
-          <div style="margin-top: 25px; text-align: right">
-            <button
-              type="button"
-              onclick="closeEditModal()"
-              style="background-color: #6c757d; margin-right: 10px"
-            >
-              Batal
-            </button>
-            <button type="submit" style="background-color: #28a745">
-              Simpan Perubahan
-            </button>
-          </div>
-        </form>
-      </div>
+   <div id="editModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Quotation / Invoice Data</h3>
+      <span class="close-modal" onclick="closeEditModal()">&times;</span>
     </div>
 
+    <form id="editForm" action="/update" method="POST" style="display: block">
+      <input type="hidden" id="edit_id" name="id" />
+
+      <div class="modal-section-title">Data Operasional (Manager)</div>
+      <div class="modal-grid-2col">
+        <div>
+          <label>Item Description:</label>
+          <input type="text" id="edit_item" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+        <div>
+          <label>Qty:</label>
+          <input type="number" id="edit_qty" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+        <div>
+          <label>From (Origin):</label>
+          <input type="text" id="edit_origin" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+        <div>
+          <label>To (Destination):</label>
+          <input type="text" id="edit_destination" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+        <div>
+          <label>Selling Rate (IDR):</label>
+          <input type="number" id="edit_rate" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+        <div>
+          <label>Remark (Catatan):</label>
+          <input type="text" id="edit_remark" readonly style="background-color: #eee; cursor: not-allowed" />
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
+
+      <div class="modal-section-title" style="color: #28a745">
+        Data Internal & Keuangan (Finance)
+      </div>
+      <div class="modal-grid-2col">
+        <div>
+          <label>BL Number:</label>
+          <input type="text" id="edit_bl_number" name="bl_number" placeholder="Masukkan No. BL" />
+        </div>
+        <div>
+          <label>Container Number:</label>
+          <input type="text" id="edit_container_number" name="container_number" placeholder="Masukkan No. Container" />
+        </div>
+        <div>
+          <label>Return To:</label>
+          <input type="text" id="edit_return_to" name="return_to" placeholder="Tempat pengembalian container" />
+        </div>
+        <div>
+          <label>Rate LOLO (IDR):</label>
+          <input type="number" id="edit_lolo_rate" name="lolo_rate" placeholder="0" />
+        </div>
+        <div class="full-width" style="grid-column: span 2">
+          <label>Buying Price / Modal Vendor (IDR):</label>
+          <input type="number" id="edit_buying_price" name="buying_price" placeholder="0" required />
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
+      <div class="modal-section-title" style="color: #007bff">UPLOAD</div>
+      
+      <div class="full-width" style="grid-column: span 2">
+        <div id="drop_zone" style="border: 2px dashed #007bff; background: #f8f9fa; border-radius: 6px; padding: 25px; text-align: center; cursor: pointer; transition: 0.2s;">
+          <p style="margin: 0; font-size: 14px; color: #495057;">
+            <strong>Tarik & Lepas berkas di sini</strong> atau <span style="color: #007bff; text-decoration: underline;">Klik untuk memilih</span>
+          </p>
+          <input type="file" id="file_input" multiple accept="application/pdf,image/*" style="display: none;" />
+        </div>
+
+        <div id="uploaded_files_container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+          </div>
+      </div>
+      <div style="margin-top: 25px; text-align: right">
+        <button type="button" onclick="closeEditModal()" style="background-color: #6c757d; margin-right: 10px; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+          Batal
+        </button>
+        <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+          Simpan Perubahan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
     <script>
       function sortTable(n) {
         var table = document.getElementById("quotationTable");
@@ -692,39 +641,69 @@
         }
       }
 
-      function openEditModal(
-        id,
-        item,
-        qty,
-        origin,
-        dest,
-        rate,
-        remark,
-        bl,
-        container,
-        returnTo,
-        lolo,
-        buying,
-      ) {
-        // Masukkan data ke input field di dalam modal
-        document.getElementById("edit_id").value = id;
-        document.getElementById("edit_item").value = item;
-        document.getElementById("edit_qty").value = qty;
-        document.getElementById("edit_origin").value = origin;
-        document.getElementById("edit_destination").value = dest;
-        document.getElementById("edit_rate").value = rate;
-        document.getElementById("edit_remark").value = remark;
+function openEditModal(
+  id,
+  item,
+  qty,
+  origin,
+  dest,
+  rate,
+  remark,
+  bl,
+  containerParam, // Mengubah nama parameter agar tidak tabrakan
+  returnTo,
+  lolo,
+  buying,
+) {
+  // 1. Masukkan data ke input field di dalam modal
+  document.getElementById("edit_id").value = id;
+  document.getElementById("edit_item").value = item;
+  document.getElementById("edit_qty").value = qty;
+  document.getElementById("edit_origin").value = origin;
+  document.getElementById("edit_destination").value = dest;
+  document.getElementById("edit_rate").value = rate;
+  document.getElementById("edit_remark").value = remark;
 
-        // Data Finance yang bisa di-edit kembali jika sebelumnya sudah diisi
-        document.getElementById("edit_bl_number").value = bl;
-        document.getElementById("edit_container_number").value = container;
-        document.getElementById("edit_return_to").value = returnTo;
-        document.getElementById("edit_lolo_rate").value = lolo;
-        document.getElementById("edit_buying_price").value = buying;
+  // Data Finance yang bisa di-edit kembali jika sebelumnya sudah diisi
+  document.getElementById("edit_bl_number").value = bl;
+  document.getElementById("edit_container_number").value = containerParam;
+  document.getElementById("edit_return_to").value = returnTo;
+  document.getElementById("edit_lolo_rate").value = lolo;
+  document.getElementById("edit_buying_price").value = buying;
 
-        // Ubah display modal dari 'none' menjadi 'flex' agar muncul di tengah layar
-        document.getElementById("editModal").style.display = "flex";
+  // 2. Ubah nama variabel DOM di bawah ini agar bebas dari bentrokan nama
+  const fileContainer = document.getElementById("uploaded_files_container");
+  fileContainer.innerHTML = "<span style='font-size:13px; color:#6c757d;'>🔄 Memuat dokumen pendukung...</span>";
+
+  // 3. Ambil data dokumen dari database lewat route handler baru
+  fetch(`/get-documents?shipment_id=${id}`)
+    .then(res => res.json())
+    .then(docs => {
+      fileContainer.innerHTML = ""; // Bersihkan teks loading
+      
+      if (!docs || docs.length === 0) {
+         fileContainer.innerHTML = "<span style='color:#6c757d; font-size:13px; font-style:italic;'>Belum ada dokumen pendukung yang diunggah.</span>";
+         return;
       }
+      
+      // Tampilkan berkas yang ada di database satu per satu
+      docs.forEach(doc => {
+        const fileRow = document.createElement("div");
+        fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#e9ecef; padding:8px 12px; border-radius:4px; font-size:13px;";
+        fileRow.innerHTML = `
+          <span>📄 <a href="${doc.document_path}" target="_blank" style="color:#007bff; text-decoration:none; font-weight:500;">${doc.file_name}</a></span>
+          <a href="javascript:void(0);" onclick="deleteDocument('${doc.id}', this)" style="color:#dc3545; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
+        `;
+        fileContainer.appendChild(fileRow);
+      });
+    })
+    .catch(err => {
+      fileContainer.innerHTML = "<span style='color:#dc3545; font-size:13px;'>❌ Gagal memuat daftar berkas pendukung.</span>";
+    });
+
+  // 4. Tampilkan modal edit ke layar
+  document.getElementById("editModal").style.display = "flex";
+}
 
       // Fungsi untuk menutup Pop-Up
       function closeEditModal() {
@@ -738,6 +717,134 @@
           modal.style.display = "none";
         }
       };
+
+
+      function updateStatus(shipmentId, selectElement) {
+        const newStatus = selectElement.value;
+
+        // Mengirim data menggunakan API Fetch bawaan browser
+        fetch('/update-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `id=${encodeURIComponent(shipmentId)}&status=${encodeURIComponent(newStatus)}`
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Gagal memperbarui status di server');
+          }
+          // Opsional: Beri efek visual sukses (border hijau sesaat)
+          selectElement.style.borderColor = '#28a745';
+          setTimeout(() => selectElement.style.borderColor = '#ccc', 1000);
+        })
+        .catch(error => {
+          alert(error.message);
+          // Jika gagal, halaman di-reload untuk mengembalikan status asli di layar
+          window.location.reload();
+        });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const dropZone = document.getElementById("drop_zone");
+  const fileInput = document.getElementById("file_input");
+
+  if (!dropZone) return;
+
+  // 1. Klik area Drag & Drop untuk membuka file picker
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", function () {
+    handleFileSelection(this.files);
+  });
+
+  // 2. Efek Visual saat file melayang di atas Drop Zone
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.background = "#e2e6ea";
+    dropZone.style.borderColor = "#0056b3";
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.style.background = "#f8f9fa";
+    dropZone.style.borderColor = "#007bff";
+  });
+
+  // 3. Ketika File dilepas (Drop)
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.style.background = "#f8f9fa";
+    dropZone.style.borderColor = "#007bff";
+    
+    if (e.dataTransfer.files.length > 0) {
+      handleFileSelection(e.dataTransfer.files);
+    }
+  });
+});
+
+// Fungsi looping untuk upload file satu per satu
+function handleFileSelection(files) {
+  const shipmentId = document.getElementById("edit_id").value;
+  if (!shipmentId) {
+    alert("ID Kargo tidak ditemukan. Silakan pilih kargo kembali.");
+    return;
+  }
+
+  for (let i = 0; i < files.length; i++) {
+    uploadFileToMinio(files[i], shipmentId);
+  }
+}
+
+// Fungsi AJAX kirim file ke Backend (Go -> MinIO -> Postgres)
+function uploadFileToMinio(file, shipmentId) {
+  const container = document.getElementById("uploaded_files_container");
+
+  // Komponen Tampilan Loading
+  const fileRow = document.createElement("div");
+  fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:8px 12px; border:1px solid #ffeeba; border-radius:4px; font-size:13px; color:#856404;";
+  fileRow.innerHTML = `<span>⏳ Memproses berkas <strong>${file.name}</strong>...</span>`;
+  container.appendChild(fileRow);
+
+  const formData = new FormData();
+  formData.append("shipment_id", shipmentId);
+  formData.append("document", file);
+
+  fetch("/upload-document", {
+    method: "POST",
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) throw new Error("Gagal mengunggah dokumen ke server");
+    return response.json();
+  })
+  .then(data => {
+    // Ubah tampilan jadi SUKSES
+    fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#e2f0d9; padding:8px 12px; border:1px solid #c5e1a5; border-radius:4px; font-size:13px; color:#33691e;";
+    fileRow.innerHTML = `
+      <span>📄 <strong>${file.name}</strong> (Tersimpan)</span>
+      <a href="javascript:void(0);" onclick="deleteDocument('${data.document_id}', this)" style="color:#dc3545; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
+    `;
+  })
+  .catch(error => {
+    // Ubah tampilan jadi GAGAL
+    fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#f8d7da; padding:8px 12px; border:1px solid #f5c6cb; border-radius:4px; font-size:13px; color:#721c24;";
+    fileRow.innerHTML = `<span>❌ ${file.name} (${error.message})</span>`;
+  });
+}
+
+// Fungsi Hapus Dokumen (Tembak ke handler endpoint /delete-document)
+function deleteDocument(docId, element) {
+  if (!confirm("Apakah Anda yakin ingin menghapus dokumen ini?")) return;
+
+  fetch(`/delete-document?id=${docId}`, {
+    method: "POST" // Ubah ke POST jika rute Mux kamu menggunakan HandleFunc POST standar
+  })
+  .then(response => {
+    if (!response.ok) throw new Error("Gagal menghapus berkas di server");
+    element.parentElement.remove(); // Potong elemen dari modal secara instan
+  })
+  .catch(error => alert(error.message));
+}
     </script>
   </body>
 </html>

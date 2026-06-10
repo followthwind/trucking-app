@@ -33,9 +33,17 @@ type ShipmentStatus string
 
 const (
 	StatusPending ShipmentStatus = "PENDING"
-	StatusProcess ShipmentStatus = "PROCESS"
+	StatusProcess ShipmentStatus = "INVOICING"
 	StatusDone    ShipmentStatus = "SUBMIT OA DONE"
 )
+
+type ShipmentDocument struct {
+	ID           string    `json:"id"`
+	ShipmentID   string    `json:"shipment_id"`
+	FileName     string    `json:"file_name"`
+	DocumentPath string    `json:"document_path"`
+	CreatedAt    time.Time `json:"created_at"`
+}
 
 type ShipmentRepository interface {
 	Create(ctx context.Context, shipment *Shipment) error
@@ -43,6 +51,7 @@ type ShipmentRepository interface {
 	FindByID(ctx context.Context, id string) (*Shipment, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, shipment *Shipment) error
+	UpdateStatus(ctx context.Context, id string, status string) error
 }
 
 type ShipmentUsecase interface {
@@ -51,11 +60,22 @@ type ShipmentUsecase interface {
 	GetAllShipments(ctx context.Context) ([]Shipment, error)
 	GetShipmentByID(ctx context.Context, id string) (*Shipment, error) // <-- Tambahkan ini
 	DeleteShipment(ctx context.Context, id string) error
+	UpdateShipmentStatus(ctx context.Context, id string, status string) error
+	UploadDocument(ctx context.Context, shipmentID, fileName, contentType string, fileData []byte) (*ShipmentDocument, error)
+	GetShipmentDocuments(ctx context.Context, shipmentID string) ([]ShipmentDocument, error)
+	UpdateShipmentData(ctx context.Context, s *Shipment) error
+}
+
+type MinioRepository interface {
+	Upload(ctx context.Context, fileName string, fileData []byte, contentType string) (string, error)
+	GetObject(ctx context.Context, fileName string) (io.ReadCloser, error) // Tambahkan baris ini
+	DeleteFile(ctx context.Context, fileName string) error
 }
 
 type DocumentRepository interface {
-	Upload(ctx context.Context, fileName string, fileData []byte, contentType string) (string, error)
-	GetObject(ctx context.Context, fileName string) (io.ReadCloser, error) // Tambahkan baris ini
+	Save(ctx context.Context, doc *ShipmentDocument) error
+	FindByShipmentID(ctx context.Context, shipmentID string) ([]ShipmentDocument, error)
+	DeleteDoc(ctx context.Context, id string) error // Nama ini yang dipakai sesuai error compiler tadi
 }
 
 // fileData []byte, contentType string

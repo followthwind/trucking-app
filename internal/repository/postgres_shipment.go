@@ -33,11 +33,60 @@ func (r *postgresShipmentRepository) Create(ctx context.Context, s *domain.Shipm
 }
 
 func (r *postgresShipmentRepository) Update(ctx context.Context, s *domain.Shipment) error {
-	query := `UPDATE shipments SET buying_price = $1, gross_profit = $2, profit_percentage = $3, lolo_rate = $4, return_to = $5, bl_number = $6, container_number = $7, document_path = $8, status = $9
-	WHERE id = $10`
-	_, err := r.db.ExecContext(ctx, query, s.BuyingPrice, s.GrossProfit, s.ProfitPercentage, s.LoloRate, s.ReturnTo, s.BLNumber, s.ContainerNumber, s.DocumentPath, s.Status, s.ID)
+	// HAPUS kolom document_path dari query update
+	query := `
+		UPDATE shipments 
+		SET buying_price = $1, 
+		    gross_profit = $2, 
+		    profit_percentage = $3, 
+		    lolo_rate = $4, 
+		    return_to = $5, 
+		    bl_number = $6, 
+		    container_number = $7, 
+		    status = $8
+		WHERE id = $9
+	`
+
+	// Sesuaikan urutan parameternya (sekarang cuma sampai $9)
+	_, err := r.db.ExecContext(ctx, query,
+		s.BuyingPrice,
+		s.GrossProfit,
+		s.ProfitPercentage,
+		s.LoloRate,
+		s.ReturnTo,
+		s.BLNumber,
+		s.ContainerNumber,
+		s.Status,
+		s.ID,
+	)
 
 	return err
+}
+
+func (r *postgresShipmentRepository) UpdateStatus(ctx context.Context, id string, status string) error {
+	// Hapus updated_at karena kolomnya tidak ada di database kamu
+	query := `
+		UPDATE shipments 
+		SET status = $1 
+		WHERE id = $2
+	`
+
+	// Eksekusi query ke database
+	result, err := r.db.ExecContext(ctx, query, status, id)
+	if err != nil {
+		return err
+	}
+
+	// Pastikan bahwa memang ada baris data yang ter-update
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 // FetchAll bertugas menjalankan query SELECT untuk mengambil semua data dari PostgreSQL
@@ -45,7 +94,7 @@ func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shi
 	query := `
         SELECT id, item_description, origin, destination, qty, rate, 
         amount, buying_price, gross_profit, profit_percentage, 
-        remark, document_path, created_at, lolo_rate, return_to, bl_number, container_number
+        remark, document_path, created_at, lolo_rate, return_to, bl_number, container_number, status
         FROM shipments 
         WHERE is_delete = false 
         ORDER BY created_at DESC
@@ -62,7 +111,7 @@ func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shi
 		err := rows.Scan(
 			&s.ID, &s.ItemDescription, &s.Origin, &s.Destination, &s.Qty, &s.Rate,
 			&s.Amount, &s.BuyingPrice, &s.GrossProfit, &s.ProfitPercentage,
-			&s.Remark, &s.DocumentPath, &s.CreatedAt, &s.LoloRate, &s.ReturnTo, &s.BLNumber, &s.ContainerNumber,
+			&s.Remark, &s.DocumentPath, &s.CreatedAt, &s.LoloRate, &s.ReturnTo, &s.BLNumber, &s.ContainerNumber, &s.Status,
 		)
 		if err != nil {
 			return nil, err

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"html/template"
 	"io"
 	"log"
@@ -14,15 +15,15 @@ import (
 )
 
 type ShipmentHandler struct {
-	usecase domain.ShipmentUsecase
-	docRepo domain.DocumentRepository // Tambahkan ini agar handler bisa ambil file dari MinIO
+	usecase   domain.ShipmentUsecase
+	minioRepo domain.MinioRepository // Tambahkan ini agar handler bisa ambil file dari MinIO
 }
 
-// Update fungsi New dengan memasukkan d domain.DocumentRepository
-func NewShipmentHandler(u domain.ShipmentUsecase, d domain.DocumentRepository) *ShipmentHandler {
+// Update fungsi New dengan memasukkan d domain.MinioRepository
+func NewShipmentHandler(u domain.ShipmentUsecase, d domain.MinioRepository) *ShipmentHandler {
 	return &ShipmentHandler{
-		usecase: u,
-		docRepo: d,
+		usecase:   u,
+		minioRepo: d,
 	}
 }
 
@@ -34,6 +35,10 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/export-excel", h.ExportExcel)
 	mux.HandleFunc("/generate-invoice", h.GenerateInvoice) // <-- Tambahkan rute ini
 	mux.HandleFunc("/delete", h.DeleteShipment)
+	mux.HandleFunc("/update-status", h.UpdateStatus)
+	mux.HandleFunc("/upload-document", h.UploadDocument) // Untuk AJAX Drag & Drop
+	mux.HandleFunc("/get-documents", h.GetDocuments)
+	mux.HandleFunc("/update", h.UpdateShipment)
 }
 
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
@@ -116,6 +121,79 @@ func (h *ShipmentHandler) SubmitForm(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func (h *ShipmentHandler) UpdateShipment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 1. Ambil ID kargo (Sangat krusial! Pastikan tag HTML punya name="id")
+	shipmentID := r.FormValue("id")
+	if shipmentID == "" {
+		http.Error(w, "ID Kargo tidak valid atau kosong", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Ambil hanya data yang diinput oleh Finance saja
+	loloRate, _ := strconv.ParseInt(r.FormValue("lolo_rate"), 10, 64)
+	buyingPrice, _ := strconv.ParseInt(r.FormValue("buying_price"), 10, 64)
+
+	// Bentuk objek dengan field yang diizinkan diubah oleh Finance
+	shipment := &domain.Shipment{
+		ID:              shipmentID,
+		BLNumber:        r.FormValue("bl_number"),
+		ContainerNumber: r.FormValue("container_number"),
+		ReturnTo:        r.FormValue("return_to"),
+		LoloRate:        loloRate,
+		BuyingPrice:     buyingPrice,
+		Status:          "INVOICING", // Otomatis naik status ke tahap penagihan
+	}
+
+	// 3. Panggil usecase untuk memproses penggabungan data lama + hitung profit otomatis
+	err := h.usecase.UpdateShipmentData(r.Context(), shipment)
+	if err != nil {
+		http.Error(w, "Gagal memperbarui data internal keuangan: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Setelah sukses, lempar balik user ke halaman utama (tabel akan ter-refresh)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (h *ShipmentHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
+	// Karena kita pakai mux.HandleFunc, wajib kunci Method POST manual di sini
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 1. Ambil data dari body yang di-fetch oleh JavaScript
+	id := r.FormValue("id")
+	status := r.FormValue("status")
+
+	if id == "" || status == "" {
+		http.Error(w, "ID atau Status tidak boleh kosong", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Validasi Nilai Status sesuai domain.ShipmentStatus
+	if status != "PENDING" && status != "INVOICING" && status != "SUBMIT OA DONE" {
+		http.Error(w, "Nilai status tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Panggil fungsi Usecase yang sudah kamu buat
+	err := h.usecase.UpdateShipmentStatus(r.Context(), id, status)
+	if err != nil {
+		http.Error(w, "Gagal update status: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Beri respon sukses ke browser
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Status updated successfully"))
+}
+
 // ViewFile bertugas mengambil file stream dari MinIO dan melemparnya langsung ke tab browser baru
 func (h *ShipmentHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 	fileName := r.URL.Query().Get("file")
@@ -125,7 +203,7 @@ func (h *ShipmentHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Tarik object file langsung dari bucket MinIO
-	object, err := h.docRepo.GetObject(r.Context(), fileName)
+	object, err := h.minioRepo.GetObject(r.Context(), fileName)
 	if err != nil {
 		http.Error(w, "File tidak ditemukan di storage: "+err.Error(), http.StatusNotFound)
 		return
@@ -138,6 +216,8 @@ func (h *ShipmentHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 	// Stream datanya langsung ke layar browser
 	io.Copy(w, object)
 }
+
+//---EXCEL GENERATION------------------------------------------------------
 
 func (h *ShipmentHandler) ExportExcel(w http.ResponseWriter, r *http.Request) {
 	// 1. Ambil seluruh data dari database lewat usecase
@@ -191,6 +271,95 @@ func (h *ShipmentHandler) ExportExcel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Gagal mengirim file excel ke unduhan: "+err.Error(), http.StatusInternalServerError)
 	}
 }
+
+func (h *ShipmentHandler) UploadDocument(w http.ResponseWriter, r *http.Request) {
+	// Kunci method harus POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Batasi ukuran berkas upload maks 10MB per file
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "File terlalu besar! Maksimal 10MB", http.StatusBadRequest)
+		return
+	}
+
+	shipmentID := r.FormValue("shipment_id")
+	if shipmentID == "" {
+		http.Error(w, "Shipment ID tidak boleh kosong", http.StatusBadRequest)
+		return
+	}
+
+	// Ambil file dari form-data bernama "document" (sesuai setingan JS Fetch)
+	file, header, err := r.FormFile("document")
+	if err != nil {
+		http.Error(w, "Gagal membaca berkas dokumen", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Baca file fisik menjadi slice byte
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Gagal memproses data file", http.StatusInternalServerError)
+		return
+	}
+
+	contentType := header.Header.Get("Content-Type")
+
+	// Tembak langsung ke usecase yang sudah kita rakit sebelumnya
+	newDoc, err := h.usecase.UploadDocument(r.Context(), shipmentID, header.Filename, contentType, fileBytes)
+	if err != nil {
+		http.Error(w, "Gagal menyimpan dokumen: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Kembalikan response sukses berbentuk JSON ke Javascript Frontend
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"document_id":   newDoc.ID,
+		"document_path": "/view?file=" + newDoc.DocumentPath, // URL untuk klik buka file
+		"status":        "success",
+	})
+}
+
+// =========================================================================
+// HANDLER BARU: Mengambil list dokumen untuk ditampilkan saat Modal dibuka
+// =========================================================================
+func (h *ShipmentHandler) GetDocuments(w http.ResponseWriter, r *http.Request) {
+	// Kunci method harus GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
+		return
+	}
+
+	shipmentID := r.URL.Query().Get("shipment_id")
+	if shipmentID == "" {
+		http.Error(w, "Parameter shipment_id dibutuhkan", http.StatusBadRequest)
+		return
+	}
+
+	// Ambil data dari usecase
+	docs, err := h.usecase.GetShipmentDocuments(r.Context(), shipmentID)
+	if err != nil {
+		http.Error(w, "Gagal mengambil daftar dokumen: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Jika hasilnya kosong (nil), buat slice kosong agar JSON tidak mengembalikan nilai 'null'
+	if docs == nil {
+		docs = []domain.ShipmentDocument{}
+	}
+
+	// Kirim data slice dokumen berbentuk JSON array ke frontend
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(docs)
+}
+
+//---QUOTATION GENERATION-------------------------------------------------------------------------------
 
 func formatRupiah(amount int64) string {
 	return "Rp " + strconv.FormatInt(amount, 10)

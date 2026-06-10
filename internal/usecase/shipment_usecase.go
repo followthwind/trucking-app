@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 	"trucking-app/internal/domain"
 
@@ -10,14 +12,16 @@ import (
 
 type shipmentUsecase struct {
 	shipmentRepo domain.ShipmentRepository
+	minioRepo    domain.MinioRepository
 	docRepo      domain.DocumentRepository
 }
 
 // NewShipmentUsecase melahirkan objek usecase baru
-func NewShipmentUsecase(repo domain.ShipmentRepository, docRepo domain.DocumentRepository) domain.ShipmentUsecase {
+func NewShipmentUsecase(repo domain.ShipmentRepository, minioRepo domain.MinioRepository, docRepo domain.DocumentRepository) domain.ShipmentUsecase {
 	return &shipmentUsecase{
 		shipmentRepo: repo,
-		docRepo:      docRepo,
+		minioRepo:    minioRepo,
+		docRepo:      docRepo, // Daftarkan di sini
 	}
 }
 
@@ -55,40 +59,48 @@ func (u *shipmentUsecase) InsertShipment(ctx context.Context, s *domain.Shipment
 	return u.shipmentRepo.Create(ctx, s)
 }
 
-func (u *shipmentUsecase) UpdateShipment(ctx context.Context, s *domain.Shipment, fileData []byte, contentType string) error {
+func (u *shipmentUsecase) UpdateShipmentData(ctx context.Context, s *domain.Shipment) error {
+	// 1. Ambil data kargo asli dari DB terlebih dahulu untuk tahu "Selling Rate" / "Amount" awal
+	existingShipment, err := u.shipmentRepo.FindByID(ctx, s.ID)
+	if err != nil {
+		return fmt.Errorf("kargo tidak ditemukan: %w", err)
+	}
 
-	existing, err := u.shipmentRepo.FindByID(ctx, s.ID)
+	s.ItemDescription = existingShipment.ItemDescription
+	s.Origin = existingShipment.Origin
+	s.Destination = existingShipment.Destination
+	s.Rate = existingShipment.Rate
+	s.Qty = existingShipment.Qty
+	s.Amount = existingShipment.Amount
+
+	// 2. Hitung Ulang Rumus Keuangan Logistik
+	// Gross Profit = Total Pendapatan - (Modal Vendor + Rate LOLO)
+	s.GrossProfit = existingShipment.Amount - s.BuyingPrice
+
+	// Profit Percentage = (Gross Profit / Total Pendapatan) * 100
+	if existingShipment.Amount > 0 {
+		s.ProfitPercentage = int((float64(s.GrossProfit) * 100) / float64(existingShipment.Amount))
+	}
+
+	// Pertahankan data esensial yang tidak diubah di modal finance
+
+	// 3. Tembak perintah update ke repository
+	return u.shipmentRepo.Update(ctx, s)
+}
+
+func (u *shipmentUsecase) UpdateShipmentStatus(ctx context.Context, id string, status string) error {
+	// 1. Validasi bisnis tambahan (Opsional)
+	if id == "" {
+		return errors.New("id tidak boleh kosong")
+	}
+
+	// 2. Teruskan data ke layer repository
+	err := u.shipmentRepo.UpdateStatus(ctx, id, status)
 	if err != nil {
 		return err
 	}
 
-	// 2. Hitung ulang finansial secara lengkap
-	existing.BuyingPrice = s.BuyingPrice
-	existing.LoloRate = s.LoloRate
-	existing.ReturnTo = s.ReturnTo
-	existing.BLNumber = s.BLNumber
-	existing.ContainerNumber = s.ContainerNumber
-
-	// Rumus Finansial
-	existing.GrossProfit = existing.Amount - s.BuyingPrice
-	if existing.Amount > 0 {
-		existing.ProfitPercentage = int((existing.GrossProfit * 100) / existing.Amount)
-	}
-
-	// Ubah status menjadi INVOICED karena data sudah lengkap
-	existing.Status = domain.StatusProcess
-
-	// 3. Jika ada upload file invoice/bukti baru dari finance
-	if len(fileData) > 0 {
-		uniqueFileName := s.ID + "-invoice"
-		uploadedName, err := u.docRepo.Upload(ctx, uniqueFileName, fileData, contentType)
-		if err != nil {
-			return err
-		}
-		existing.DocumentPath = uploadedName
-	}
-
-	return u.shipmentRepo.Update(ctx, existing)
+	return nil
 }
 
 // GetAllShipments menarik daftar semua data dari database
@@ -102,4 +114,42 @@ func (u *shipmentUsecase) GetShipmentByID(ctx context.Context, id string) (*doma
 
 func (u *shipmentUsecase) DeleteShipment(ctx context.Context, id string) error {
 	return u.shipmentRepo.Delete(ctx, id)
+}
+
+func (u *shipmentUsecase) UploadDocument(ctx context.Context, shipmentID, fileName, contentType string, fileData []byte) (*domain.ShipmentDocument, error) {
+	if shipmentID == "" {
+		return nil, errors.New("shipment ID tidak boleh kosong")
+	}
+
+	uniqueName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), fileName)
+
+	objectPath, err := u.minioRepo.Upload(ctx, uniqueName, fileData, contentType)
+	if err != nil {
+		return nil, fmt.Errorf("gagal upload ke minio storage: %w", err)
+	}
+
+	newDoc := &domain.ShipmentDocument{
+		ID:           uuid.New().String(),
+		ShipmentID:   shipmentID,
+		FileName:     fileName,
+		DocumentPath: objectPath,
+		CreatedAt:    time.Now(),
+	}
+
+	// Memanggil u.docRepo.Save (bukan SaveDoc lagi) sesuai interface baru
+	if err := u.docRepo.Save(ctx, newDoc); err != nil {
+		_ = u.minioRepo.DeleteFile(ctx, uniqueName)
+		return nil, fmt.Errorf("gagal menyimpan data dokumen ke database: %w", err)
+	}
+
+	return newDoc, nil
+}
+
+func (u *shipmentUsecase) GetShipmentDocuments(ctx context.Context, shipmentID string) ([]domain.ShipmentDocument, error) {
+	if shipmentID == "" {
+		return nil, errors.New("shipment ID tidak boleh kosong")
+	}
+
+	// Memanggil u.docRepo.FindByShipmentID (bukan FindByShipmentIDDoc lagi)
+	return u.docRepo.FindByShipmentID(ctx, shipmentID)
 }

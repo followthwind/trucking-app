@@ -18,7 +18,7 @@ type minioRepository struct {
 }
 
 // NewMinioRepository menginisialisasi koneksi awal ke MinIO Server
-func NewMinioRepository() (domain.DocumentRepository, error) {
+func NewMinioRepository() (domain.MinioRepository, error) {
 	endpoint := os.Getenv("MINIO_ENDPOINT")
 	accessKey := os.Getenv("MINIO_ACCESS_KEY")
 	secretKey := os.Getenv("MINIO_SECRET_KEY")
@@ -69,6 +69,15 @@ func (m *minioRepository) Upload(ctx context.Context, fileName string, fileData 
 
 	// Mengembalikan nama file yang sukses disimpan untuk dicatat di Postgres
 	return fileName, nil
+}
+
+func (m *minioRepository) DeleteFile(ctx context.Context, fileName string) error {
+	// Memanggil fungsi RemoveObject bawaan library minio-go v7
+	err := m.client.RemoveObject(ctx, m.bucketName, fileName, minio.RemoveObjectOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetObject mengambil file dari MinIO berbentuk stream data reader

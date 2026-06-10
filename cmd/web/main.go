@@ -33,11 +33,12 @@ func main() {
 	// 3. Rakit Clean Architecture (Dependency Injection)
 	// Hubungkan DB -> Repository -> Usecase
 	shipmentRepo := repository.NewPostgresShipmentRepository(db)
-	shipmentUsecase := usecase.NewShipmentUsecase(shipmentRepo, minioRepo)
+	docRepo := repository.NewPostgresDocumentRepository(db)
+	shipmentUsecase := usecase.NewShipmentUsecase(shipmentRepo, minioRepo, docRepo)
 
 	// Inisialisasi HTTP Handler
 	webHandler := http.NewShipmentHandler(shipmentUsecase, minioRepo)
-	
+
 	// Gunakan multiplexer bawaan Go sebagai engine router
 	mux := netHttp.NewServeMux()
 	webHandler.RegisterRoutes(mux)
@@ -45,6 +46,5 @@ func main() {
 	port := ":8080"
 	fmt.Printf("🚀 Server Web Trucking Menyala Tampan di http://localhost%s\n", port)
 	log.Fatal(netHttp.ListenAndServe(port, mux))
-
 
 }
