@@ -40,6 +40,9 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/get-documents", h.GetDocuments)
 	mux.HandleFunc("/update", h.UpdateShipment)
 	mux.HandleFunc("/delete-document", h.DeleteDocument)
+	mux.HandleFunc("/logos.png", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "logos.png")
+	})
 }
 
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
