@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 	"trucking-app/internal/domain"
 
@@ -152,4 +153,21 @@ func (u *shipmentUsecase) GetShipmentDocuments(ctx context.Context, shipmentID s
 
 	// Memanggil u.docRepo.FindByShipmentID (bukan FindByShipmentIDDoc lagi)
 	return u.docRepo.FindByShipmentID(ctx, shipmentID)
+}
+
+func (u *shipmentUsecase) DeleteShipmentDocument(ctx context.Context, docID string) error {
+	// 1. Ambil data SATU dokumen tunggal berdasarkan ID-nya
+	doc, err := u.docRepo.FindDocByID(ctx, docID) // <-- Sekarang memanggil fungsi baru
+	if err != nil {
+		return fmt.Errorf("dokumen tidak ditemukan: %w", err)
+	}
+
+	// 2. Hapus file fisiknya dari MinIO (Sekarang doc.DocumentPath sudah aman dan tidak error lagi)
+	err = u.minioRepo.DeleteFile(ctx, doc.DocumentPath)
+	if err != nil {
+		log.Printf("[Warning] Gagal menghapus file di MinIO: %v", err)
+	}
+
+	// 3. Hapus record baris data dari Postgres menggunakan fungsi DeleteDoc milikmu
+	return u.docRepo.DeleteDoc(ctx, docID)
 }

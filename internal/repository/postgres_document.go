@@ -40,6 +40,25 @@ func (r *postgresDocumentRepository) FindByShipmentID(ctx context.Context, shipm
 	return docs, nil
 }
 
+func (r *postgresDocumentRepository) FindDocByID(ctx context.Context, id string) (*domain.ShipmentDocument, error) {
+	// Pastikan nama kolom (id, shipment_id, file_name, document_path) sesuai dengan isi tabel DB kamu
+	query := `SELECT id, shipment_id, file_name, document_path FROM shipment_documents WHERE id = $1`
+
+	var doc domain.ShipmentDocument
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&doc.ID,
+		&doc.ShipmentID,
+		&doc.FileName,
+		&doc.DocumentPath,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &doc, nil
+}
+
 func (r *postgresDocumentRepository) DeleteDoc(ctx context.Context, id string) error {
 	query := `DELETE FROM shipment_documents WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)

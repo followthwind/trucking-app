@@ -4,288 +4,352 @@
     <meta charset="UTF-8" />
     <title>SMRT Trucking Quotation System</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 30px;
-        background-color: #f4f6f9;
-      }
-      .container {
-        max-width: 1200px;
-        margin: auto;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-      h2 {
-        color: #333;
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 8px;
-        margin-bottom: 20px;
-      }
-      form {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 4px;
-      }
-      .full-width {
-        grid-column: span 2;
-      }
-      label {
-        font-weight: bold;
-        display: block;
-        margin-bottom: 5px;
-      }
-      input,
-      text-area,
-      select {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #28a745;
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-      }
-      button:hover {
-        background-color: #218838;
+      :root {
+        --primary: #0f172a;       /* Slate 900 - Teks & komponen utama lebih kontras */
+        --primary-light: #1e293b; /* Slate 800 */
+        --accent: #4f46e5;        /* Indigo - Warna Brand Utama */
+        --accent-hover: #4338ca;
+        --success: #059669;       /* Emerald Kontras Tinggi */
+        --bg-main: #cbd5e1;       /* Berubah ke Slate 300 - Memberikan background luar yang solid & dalam kontras */
+        --bg-body: #f1f5f9;       /* Slate 100 - Dasar halaman utama */
+        --bg-card: #ffffff;       /* Putih bersih khusus untuk kontainer data */
+        --bg-form-section: #f8fafc;/* Lapisan abu-abu sangat lembut untuk kontainer form */
+        --border-color: #cbd5e1;  /* Slate 300 - Garis pembatas dinaikkan ketegasannya */
+        --text-main: #0f172a;     /* Slate 900 - Hitam pekat profesional */
+        --text-muted: #475569;    /* Slate 600 - Teks sekunder lebih gelap agar terbaca jelas */
       }
 
-      /* Layout untuk Header Tabel dan Tombol Export */
+      body {
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 25px;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+      }
+
+      .container {
+        max-width: 1500px;
+        margin: auto;
+        background: var(--bg-card);
+        padding: 30px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+      }
+
+      /* PANEL FORM INPUT (Diberi background berbeda agar terpisah dari tabel) */
+      .form-section {
+        background-color: var(--bg-form-section);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-top: 0;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      form {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+      }
+
+      .col-6 { grid-column: span 6; }
+      .col-3 { grid-column: span 3; }
+      .full-width { grid-column: span 12; }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      input, select, textarea {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        border: 1px solid #94a3b8; /* Border input lebih tegas */
+        border-radius: 6px;
+        box-sizing: border-box;
+        transition: all 0.2s;
+        background-color: #fff;
+        color: var(--text-main);
+      }
+
+      input:focus, select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      }
+
+      .form-actions {
+        grid-column: span 12;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+
+      button[type="submit"] {
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        padding: 11px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: background-color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+      }
+
+      button[type="submit"]:hover {
+        background-color: var(--accent-hover);
+      }
+
+      /* AREA MONITOR & HEADER TABEL */
       .table-header-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 40px;
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 8px;
+        margin-top: 20px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--primary); /* Garis hitam pemisah tabel monitor */
       }
+
       .table-header-container h2 {
         border-bottom: none;
         margin: 0;
         padding-bottom: 0;
       }
+
       .btn-export {
-        background-color: #007bff;
-        color: white;
+        background-color: #fff;
+        color: var(--primary);
+        border: 1px solid #94a3b8;
         text-decoration: none;
-        padding: 10px 15px;
-        border-radius: 4px;
-        font-weight: bold;
-        font-size: 14px;
-        transition: background-color 0.2s;
-      }
-      .btn-export:hover {
-        background-color: #0056b3;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
 
-      /* SOLUSI AGAR TABEL TIDAK KELUAR LAYAR */
+      .btn-export:hover {
+        background-color: #e2e8f0;
+        border-color: #64748b;
+      }
+
+      /* OPTIMALISASI TABEL & SEPARASI BARIS BARU */
       .table-responsive {
         width: 100%;
         overflow-x: auto;
-        margin-top: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
       }
+
       table {
         width: 100%;
-        border-collapse: separate; /* Menggunakan separate agar sticky border berfungsi sempurna */
+        border-collapse: separate;
         border-spacing: 0;
-        min-width: 1500px; /* Memaksa tabel memanjang ke kanan agar memicu scrollbar */
+        min-width: 1600px;
+        background-color: #ffffff;
       }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
-        font-size: 13px;
+
+      th, td {
+        border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color);
+        padding: 12px 14px;
+        font-size: 0.85rem;
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
+
       th {
-        background-color: #007bff;
-        color: white;
+        background-color: #e2e8f0; /* Header abu-abu padat (Bukan putih) */
+        color: var(--primary);      /* Tulisan hitam tebal */
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
         cursor: pointer;
         user-select: none;
       }
+
       th:hover {
-        background-color: #0056b3;
-      }
-      tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: #cbd5e1;
       }
 
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Zebra Striping Dipertegas (Selang-seling abu tipis agar mata tidak melompat baris) */
+      tr:nth-child(even) {
+        background-color: #f8fafc; 
+      }
+
+      tr:hover {
+        background-color: #e0e7ff !important; /* Efek sorot warna biru indigo transparan saat di-hover */
+      }
+
+      .text-right {
+        text-align: right;
+      }
+
+      /* FIXED STICKY KOLOM UNTUK BARIS JELAS */
       .sticky-col {
         position: sticky;
         right: 0;
-        background-color: white !important; /* Mencegah tembus pandang saat ditimpa baris data */
-        border-left: 2px solid #bbb; /* Garis vertikal pembatas tegas */
+        background-color: #ffffff !important;
+        border-left: 2px solid #94a3b8; /* Pembatas vertikal tebal untuk kolom kunci */
+        border-right: none;
         z-index: 2;
+        box-shadow: -6px 0 10px rgba(0, 0, 0, 0.05);
       }
 
       th.sticky-col {
-        background-color: #0069d9 !important; /* Warna header khusus kolom aksi */
-        z-index: 3; /* Lebih tinggi dari td agar tidak tertimpa saat scroll vertikal */
+        background-color: #e2e8f0 !important;
+        z-index: 3;
+      }
+
+      tr:hover .sticky-col {
+        background-color: #e0e7ff !important; /* Sinkronisasi warna hover kolom terkunci */
       }
 
       tr:nth-child(even) .sticky-col {
-        background-color: #f2f2f2 !important; /* Menjaga konsistensi zebra-striping */
-      }
-      .no-file {
-        color: #999;
-        font-style: italic;
-      }
-      /* Alokasi Lebar Kolom Data */
-      .col-item {
-        width: 140px;
-      }
-      .col-from {
-        width: 100px;
-      }
-      .col-to {
-        width: 180px;
-      }
-      .col-bl {
-        width: 120px;
-      }
-      .col-containerno {
-        width: 130px;
-      }
-      .col-returnto {
-        width: 110px;
-      }
-      .col-qty {
-        width: 60px;
-      }
-      .col-rate {
-        width: 110px;
-      }
-      .col-ratelolo {
-        width: 110px;
-      }
-      .col-selling {
-        width: 120px;
-      }
-      .col-buying {
-        width: 110px;
-      }
-      .col-profit {
-        width: 110px;
-      }
-      .col-remark {
-        width: 140px;
-      }
-      .col-percent {
-        width: 60px;
-      }
-      .col-doc {
-        width: 90px;
+        background-color: #f8fafc !important;
       }
 
-      /* Kolom aksi digabung jadi satu wadah melayang selebar 280px */
-      .col-action {
-        width: 300px;
+      /* Penyesuaian Lebar Komponen */
+      .col-date { width: 105px; text-align: center;}
+      .col-item { width: 150px; }
+      .col-from { width: 110px; }
+      .col-to { width: 160px; }
+      .col-bl { width: 110px; }
+      .col-containerno { width: 130px; }
+      .col-returnto { width: 110px; }
+      .col-qty { width: 60px; text-align: center; }
+      .col-rate { width: 110px; }
+      .col-ratelolo { width: 110px; }
+      .col-selling { width: 120px; }
+      .col-buying { width: 110px; }
+      .col-profit { width: 120px; }
+      .col-remark { width: 160px; }
+      .col-percent { width: 70px; text-align: center; }
+      .col-action { width: 280px; }
+
+      .status-select {
+        width: auto;
+        padding: 5px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 1px solid #94a3b8;
+        background-color: #fff;
       }
 
-      /* Styling Khusus Tombol-Tombol Aksi Kecil */
       .action-wrapper {
         display: flex;
-        gap: 5px;
+        gap: 8px;
         align-items: center;
       }
-      .btn-action {
-        color: white;
+      
+      .action-link {
+        font-weight: 600;
         text-decoration: none;
-        padding: 5px 8px;
-        border-radius: 3px;
-        font-weight: bold;
-        font-size: 11px;
-        white-space: nowrap;
-        display: inline-block;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
       }
-      .btn-view {
-        background-color: #17a2b8;
-      }
-      .btn-edit {
-        background-color: #ffc107;
-        color: #212529;
-      }
-      .btn-quotation {
-        background-color: #e28743;
-      }
-      .btn-invoice {
-        background-color: #28a745;
-      }
-      .btn-delete {
-        background-color: #dc3545;
-      }
+      .link-edit { color: #b45309; }
+      .link-edit:hover { background-color: #fef3c7; }
+      .link-quot { color: #4f46e5; }
+      .link-quot:hover { background-color: #e0e7ff; }
+      .link-del { color: #dc2626; }
+      .link-del:hover { background-color: #fee2e2; }
 
+      /* MODAL POPUP */
       .modal-overlay {
-        display: none; /* Tersembunyi secara default */
+        display: none;
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(
-          0,
-          0,
-          0,
-          0.5
-        ); /* Latar belakang agak hitam transparan */
-        z-index: 9999; /* Pastikan berada di atas tabel sticky */
+        background-color: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 9999;
         justify-content: center;
         align-items: center;
       }
 
       .modal-content {
         background-color: white;
-        padding: 25px;
-        border-radius: 8px;
+        padding: 30px;
+        border-radius: 12px;
         width: 100%;
-        max-width: 650px; /* Lebar maksimal kotak pop-up */
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        max-width: 650px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
         box-sizing: border-box;
+        border: 1px solid var(--border-color);
       }
 
       .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 10px;
-        margin-bottom: 25px;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 14px;
+        margin-bottom: 20px;
       }
 
       .modal-header h3 {
         margin: 0;
-        color: #333;
+        font-size: 1.25rem;
+        color: var(--primary);
       }
 
       .close-modal {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
-        color: #aaa;
+        color: var(--text-muted);
         cursor: pointer;
+        line-height: 1;
       }
 
       .close-modal:hover {
-        color: black;
+        color: var(--text-main);
       }
 
       .modal-section-title {
-        font-weight: bold;
-        font-size: 14px;
+        font-weight: 700;
+        font-size: 0.75rem;
         margin-bottom: 12px;
-        color: #007bff;
+        color: var(--accent);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -293,97 +357,63 @@
       .modal-grid-2col {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 14px;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h2>Input New Trucking Quotation</h2>
-      <form action="/submit" method="POST" enctype="multipart/form-data">
-        <div>
-          <label>Item:</label>
-          <input
-            type="text"
-            name="item_description"
-            placeholder="e.g. Trucking Full 40'"
-            required
-          />
-        </div>
-        <div>
-          <label>From:</label>
-          <input
-            type="text"
-            name="origin"
-            placeholder="e.g. JKT Terminal"
-            required
-          />
-        </div>
-        <div>
-          <label>To:</label>
-          <input
-            type="text"
-            name="destination"
-            placeholder="Full Address Balaraja"
-            required
-          />
-        </div>
-        <!-- <div>
-          <label>BL Number: </label>
-          <input type="text" name="bl_number" placeholder="" required />
-        </div>
-        <div>
-          <label>Container Number: </label>
-          <input type="text" name="container_number" placeholder="" required />
-        </div>
-        <div>
-          <label>Return To: </label>
-          <input type="text" name="return_to" placeholder="" required />
-        </div> -->
-        <div>
-          <label>Qty:</label>
-          <input type="number" name="qty" placeholder="0" required />
-        </div>
-        <div>
-          <label>Rate:</label>
-          <input type="number" name="rate" placeholder="10000" required />
-        </div>
-        <!-- <div>
-          <label>Rate (LOLO):</label>
-          <input type="number" name="lolo_rate" placeholder="10000" required />
-        </div>
-        <div>
-          <label>Buying Price (Total Modal):</label>
-          <input
-            type="number"
-            name="buying_price"
-            placeholder="10000"
-            required
-          />
-        </div> -->
-        <!-- <div>
-          <label>Upload Document (PDF/Image):</label>
-          <input
-            type="file"
-            name="document"
-            accept="application/pdf,image/*"
-            required
-          />
-        </div> -->
-        <div class="full-width">
-          <label>Remark Catatan:</label>
-          <input
-            type="text"
-            name="remark"
-            placeholder="e.g. Max payload 28ton"
-            required
-          />
-        </div>
-        <button type="submit" class="full-width">ADD QUOTATION</button>
-      </form>
+      
+      <div class="form-section">
+        <h2>Input New Trucking Quotation</h2>
+        <form action="/submit" method="POST" enctype="multipart/form-data">
+          <div class="form-group col-6">
+            <label>Item Description:</label>
+            <input type="text" name="item_description" placeholder="e.g. Trucking Full 40'" required />
+          </div>
+          <div class="form-group col-3">
+            <label>Qty:</label>
+            <input type="number" name="qty" placeholder="0" required />
+          </div>
+          <div class="form-group col-3">
+            <label>Rate (IDR):</label>
+            <input type="number" name="rate" placeholder="10000" required />
+          </div>
+
+          <div class="form-group col-6">
+            <label>From (Origin):</label>
+            <input type="text" name="origin" placeholder="e.g. JKT Terminal" required />
+          </div>
+          <div class="form-group col-6">
+            <label>To (Destination):</label>
+            <input type="text" name="destination" placeholder="Full Address Balaraja" required />
+          </div>
+
+          <div class="form-group full-width">
+            <label>Remark Catatan:</label>
+            <input type="text" name="remark" placeholder="e.g. Max payload 28ton" required />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit">➕ Add New Quotation</button>
+          </div>
+        </form>
+      </div>
 
       <div class="table-header-container">
         <h2>Quotation Monitor Table</h2>
+        
+        <div style="position: relative; display: flex; align-items: center; gap: 15px; margin-left: auto; margin-right: 15px;">
+          <input 
+            type="text" 
+            id="tableSearch" 
+            onkeyup="filterTable()" 
+            placeholder="🔍 Cari item, BL, container, rute, atau status..." 
+            style="width: 320px; padding: 8px 12px 8px 35px; font-size: 0.875rem; border-color: #64748b;"
+          />
+          <span id="searchCount" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;"></span>
+        </div>
+
         <a href="/export-excel" class="btn-export">📥 Export to Excel</a>
       </div>
 
@@ -391,95 +421,64 @@
         <table id="quotationTable">
           <thead>
             <tr>
-              <th class="col-item">Item</th>
-              <th class="col-from">From</th>
-              <th class="col-to">To</th>
-              <th class="col-bl">BL No</th>
-              <th class="col-containerno">Container No</th>
-              <th class="col-returnto">Return To</th>
-              <th class="col-qty">QTY</th>
-              <th class="col-rate">Rate</th>
-              <th class="col-ratelolo">Rate LOLO</th>
-              <th class="col-selling">Selling Price</th>
-              <th class="col-buying">Buying Price</th>
-              <th class="col-profit">Gross Profit</th>
-              <th class="col-remark">Remark</th>
-              <th class="col-percent">%</th>
-              <th class="col-doc">Document</th>
-              <th class="col-action sticky-col">Actions</th>
+              <th class="col-date" onclick="sortTable(0)">Tanggal ↕</th>
+              <th class="col-item" onclick="sortTable(1)">Item ↕</th>
+              <th class="col-from" onclick="sortTable(2)">From ↕</th>
+              <th class="col-to" onclick="sortTable(3)">To ↕</th>
+              <th class="col-bl" onclick="sortTable(4)">BL No ↕</th>
+              <th class="col-containerno" onclick="sortTable(5)">Container No ↕</th>
+              <th class="col-returnto" onclick="sortTable(6)">Return To ↕</th>
+              <th class="col-qty" onclick="sortTable(7)">QTY ↕</th>
+              <th class="col-rate" onclick="sortTable(8)">Rate ↕</th>
+              <th class="col-ratelolo" onclick="sortTable(9)">Rate LOLO ↕</th>
+              <th class="col-selling" onclick="sortTable(10)">Selling Price ↕</th>
+              <th class="col-buying" onclick="sortTable(11)">Buying Price ↕</th>
+              <th class="col-profit" onclick="sortTable(12)">Gross Profit ↕</th>
+              <th class="col-remark" onclick="sortTable(13)">Remark ↕</th>
+              <th class="col-percent" onclick="sortTable(14)">% ↕</th>
+              <th class="col-action sticky-col">Actions</th> 
             </tr>
           </thead>
           <tbody>
             {{range .}}
             <tr>
-              <td>{{.ItemDescription}}</td>
+              <td style="font-weight: 500;">{{.CreatedAt.Format "02 Jan 2006"}}</td>
+              <td style="font-weight: 600; color: var(--primary-light);">{{.ItemDescription}}</td>
               <td>{{.Origin}}</td>
               <td>{{.Destination}}</td>
               <td>{{.BLNumber}}</td>
               <td>{{.ContainerNumber}}</td>
               <td>{{.ReturnTo}}</td>
-              <td>{{.Qty}}</td>
-              <td>{{.Rate}}</td>
-              <td>{{.LoloRate}}</td>
-              <td><strong>{{.Amount}}</strong></td>
-              <td>{{.BuyingPrice}}</td>
-              <td style="color: green; font-weight: bold">{{.GrossProfit}}</td>
+              <td style="text-align: center; font-weight: bold;">{{.Qty}}</td>
+              
+              <td class="text-right money">{{.Rate}}</td>
+              <td class="text-right money">{{.LoloRate}}</td>
+              <td class="text-right money" style="font-weight: 700; color: #1e3a8a;">{{.Amount}}</td>
+              <td class="text-right money">{{.BuyingPrice}}</td>
+              <td class="text-right money" style="color: var(--success); font-weight: 700;">{{.GrossProfit}}</td>
+              
               <td>{{.Remark}}</td>
-              <td>{{.ProfitPercentage}}%</td>
-              <td>
-                {{if .DocumentPath}}
-                <a
-                  href="/view?file={{.DocumentPath}}"
-                  target="_blank"
-                  class="btn-action btn-view"
-                  >📄 View</a
-                >
-                {{else}}
-                <span class="no-file">No File</span>
-                {{end}}
-              </td>
+              <td style="text-align: center; font-weight: 600; color: #475569;">{{.ProfitPercentage}}%</td>
+      
               <td class="sticky-col">
                 <div class="action-wrapper">
-                  <a
-                    href="javascript:void(0);"
-                    onclick="openEditModal('{{.ID}}', '{{.ItemDescription}}', '{{.Qty}}', '{{.Origin}}', '{{.Destination}}', '{{.Rate}}', '{{.Remark}}', '{{.BLNumber}}', '{{.ContainerNumber}}', '{{.ReturnTo}}', '{{.LoloRate}}', '{{.BuyingPrice}}')"
-                    style="
-                      color: #ffc107;
-                      font-weight: bold;
-                      text-decoration: none;
-                    "
-                  >
+                  <a href="javascript:void(0);" class="action-link link-edit" onclick="openEditModal('{{.ID}}', '{{.ItemDescription}}', '{{.Qty}}', '{{.Origin}}', '{{.Destination}}', '{{.Rate}}', '{{.Remark}}', '{{.BLNumber}}', '{{.ContainerNumber}}', '{{.ReturnTo}}', '{{.LoloRate}}', '{{.BuyingPrice}}')">
                     Edit
                   </a>
-                  <span style="color: #ccc">|</span>
-                  <a
-                    href="/generate-invoice?id={{.ID}}&type=quotation"
-                    target="_blank"
-                    style="
-                      color: #e28743;
-                      font-weight: bold;
-                      text-decoration: none;
-                    "
-                    >Quotation</a
-                  >
-                  <span style="color: #ccc">|</span>
-                  <span style="color: #ccc">|</span>
-                  <a
-                    href="/delete?id={{.ID}}"
-                    onclick="return confirm('Yakin ingin menghapus data ini?');"
-                    style="
-                      color: #dc3545;
-                      font-weight: bold;
-                      text-decoration: none;
-                    "
-                    >Delete</a
-                  >
-                  <span style="color: #ccc">|</span>
-<select autocomplete="off" onchange="updateStatus('{{.ID}}', this)" style="width: auto; padding: 4px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer;">
-          <option value="PENDING" {{if eq .Status "PENDING"}}selected{{end}}>PENDING</option>
-          <option value="INVOICING" {{if eq .Status "INVOICING"}}selected{{end}}>INVOICING</option>
-          <option value="SUBMIT OA DONE" {{if eq .Status "SUBMIT OA DONE"}}selected{{end}}>SUBMIT OA DONE</option>
-        </select>
+                  <span style="color: var(--border-color)">|</span>
+                  <a href="/generate-invoice?id={{.ID}}&type=quotation" target="_blank" class="action-link link-quot">
+                    Quotation
+                  </a>
+                  <span style="color: var(--border-color)">|</span>
+                  <a href="/delete?id={{.ID}}" onclick="return confirm('Yakin ingin menghapus data ini?');" class="action-link link-del">
+                    Delete
+                  </a>
+                  <span style="color: var(--border-color)">|</span>
+                  <select autocomplete="off" onchange="updateStatus('{{.ID}}', this)" class="status-select">
+                    <option value="PENDING" {{if eq .Status "PENDING"}}selected{{end}}>PENDING</option>
+                    <option value="INVOICING" {{if eq .Status "INVOICING"}}selected{{end}}>INVOICING</option>
+                    <option value="SUBMIT OA DONE" {{if eq .Status "SUBMIT OA DONE"}}selected{{end}}>SUBMIT OA DONE</option>
+                  </select>
                 </div>
               </td>
             </tr>
@@ -489,98 +488,111 @@
       </div>
     </div>
 
-   <div id="editModal" class="modal-overlay">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Edit Quotation / Invoice Data</h3>
-      <span class="close-modal" onclick="closeEditModal()">&times;</span>
+    <div id="editModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Quotation / Invoice Data</h3>
+          <span class="close-modal" onclick="closeEditModal()">&times;</span>
+        </div>
+
+        <form id="editForm" action="/update" method="POST" style="display: block">
+          <input type="hidden" id="edit_id" name="id" />
+
+          <div class="modal-section-title">Data Operasional (Manager)</div>
+          <div class="modal-grid-2col">
+            <div>
+              <label>Item Description:</label>
+              <input type="text" id="edit_item" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569; font-weight: 500;" />
+            </div>
+            <div>
+              <label>Qty:</label>
+              <input type="number" id="edit_qty" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569;" />
+            </div>
+            <div>
+              <label>From (Origin):</label>
+              <input type="text" id="edit_origin" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569;" />
+            </div>
+            <div>
+              <label>To (Destination):</label>
+              <input type="text" id="edit_destination" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569;" />
+            </div>
+            <div>
+              <label>Selling Rate (IDR):</label>
+              <input type="number" id="edit_rate" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569;" />
+            </div>
+            <div>
+              <label>Remark (Catatan):</label>
+              <input type="text" id="edit_remark" readonly style="background-color: #e2e8f0; cursor: not-allowed; color: #475569;" />
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 2px solid var(--border-color); margin: 20px 0" />
+
+          <div class="modal-section-title" style="color: #047857">
+            Data Internal & Keuangan (Finance)
+          </div>
+          <div class="modal-grid-2col">
+            <div>
+              <label>BL Number:</label>
+              <input type="text" id="edit_bl_number" name="bl_number" placeholder="Masukkan No. BL" />
+            </div>
+            <div>
+              <label>Container Number:</label>
+              <input type="text" id="edit_container_number" name="container_number" placeholder="Masukkan No. Container" />
+            </div>
+            <div>
+              <label>Return To:</label>
+              <input type="text" id="edit_return_to" name="return_to" placeholder="Tempat pengembalian container" />
+            </div>
+            <div>
+              <label>Rate LOLO (IDR):</label>
+              <input type="number" id="edit_lolo_rate" name="lolo_rate" placeholder="0" />
+            </div>
+            <div class="full-width" style="grid-column: span 2">
+              <label>Buying Price / Modal Vendor (IDR):</label>
+              <input type="number" id="edit_buying_price" name="buying_price" placeholder="0" required />
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 2px solid var(--border-color); margin: 20px 0" />
+          <div class="modal-section-title">UPLOAD DOCUMENT</div>
+          
+          <div class="full-width" style="grid-column: span 2">
+            <div id="drop_zone" style="border: 2px dashed var(--accent); background: #f8fafc; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s;">
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted);">
+                <strong>Tarik & Lepas berkas di sini</strong> atau <span style="color: var(--accent); text-decoration: underline;">Klik untuk memilih</span>
+              </p>
+              <input type="file" id="file_input" multiple accept="application/pdf,image/*" style="display: none;" />
+            </div>
+
+            <div id="uploaded_files_container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;"></div>
+          </div>
+
+          <div style="margin-top: 25px; text-align: right">
+            <button type="button" onclick="closeEditModal()" style="background-color: #94a3b8; color: white; margin-right: 10px; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+              Batal
+            </button>
+            <button type="submit" style="background-color: var(--success); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+              Simpan Perubahan
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <form id="editForm" action="/update" method="POST" style="display: block">
-      <input type="hidden" id="edit_id" name="id" />
-
-      <div class="modal-section-title">Data Operasional (Manager)</div>
-      <div class="modal-grid-2col">
-        <div>
-          <label>Item Description:</label>
-          <input type="text" id="edit_item" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-        <div>
-          <label>Qty:</label>
-          <input type="number" id="edit_qty" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-        <div>
-          <label>From (Origin):</label>
-          <input type="text" id="edit_origin" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-        <div>
-          <label>To (Destination):</label>
-          <input type="text" id="edit_destination" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-        <div>
-          <label>Selling Rate (IDR):</label>
-          <input type="number" id="edit_rate" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-        <div>
-          <label>Remark (Catatan):</label>
-          <input type="text" id="edit_remark" readonly style="background-color: #eee; cursor: not-allowed" />
-        </div>
-      </div>
-
-      <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
-
-      <div class="modal-section-title" style="color: #28a745">
-        Data Internal & Keuangan (Finance)
-      </div>
-      <div class="modal-grid-2col">
-        <div>
-          <label>BL Number:</label>
-          <input type="text" id="edit_bl_number" name="bl_number" placeholder="Masukkan No. BL" />
-        </div>
-        <div>
-          <label>Container Number:</label>
-          <input type="text" id="edit_container_number" name="container_number" placeholder="Masukkan No. Container" />
-        </div>
-        <div>
-          <label>Return To:</label>
-          <input type="text" id="edit_return_to" name="return_to" placeholder="Tempat pengembalian container" />
-        </div>
-        <div>
-          <label>Rate LOLO (IDR):</label>
-          <input type="number" id="edit_lolo_rate" name="lolo_rate" placeholder="0" />
-        </div>
-        <div class="full-width" style="grid-column: span 2">
-          <label>Buying Price / Modal Vendor (IDR):</label>
-          <input type="number" id="edit_buying_price" name="buying_price" placeholder="0" required />
-        </div>
-      </div>
-
-      <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0" />
-      <div class="modal-section-title" style="color: #007bff">UPLOAD</div>
-      
-      <div class="full-width" style="grid-column: span 2">
-        <div id="drop_zone" style="border: 2px dashed #007bff; background: #f8f9fa; border-radius: 6px; padding: 25px; text-align: center; cursor: pointer; transition: 0.2s;">
-          <p style="margin: 0; font-size: 14px; color: #495057;">
-            <strong>Tarik & Lepas berkas di sini</strong> atau <span style="color: #007bff; text-decoration: underline;">Klik untuk memilih</span>
-          </p>
-          <input type="file" id="file_input" multiple accept="application/pdf,image/*" style="display: none;" />
-        </div>
-
-        <div id="uploaded_files_container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
-          </div>
-      </div>
-      <div style="margin-top: 25px; text-align: right">
-        <button type="button" onclick="closeEditModal()" style="background-color: #6c757d; margin-right: 10px; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-          Batal
-        </button>
-        <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-          Simpan Perubahan
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
     <script>
+      // FORMAT MERUBAH TEKS ANGKA RAW MENJADI FORMAT RUPIAH SEUSAI DOM LOADED
+      document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".money").forEach(function(el) {
+          let rawValue = el.textContent.trim();
+          let number = parseFloat(rawValue);
+          if (!isNaN(number)) {
+            el.textContent = number.toLocaleString('id-ID');
+          }
+        });
+      });
+
+      // CORE SYSTEM DATA TABLES SORTING
       function sortTable(n) {
         var table = document.getElementById("quotationTable");
         var rows = table.rows;
@@ -595,11 +607,15 @@
             var x = r[i].getElementsByTagName("TD")[n];
             var y = r[i + 1].getElementsByTagName("TD")[n];
 
-            var xContent = x.textContent || x.innerText;
-            var yContent = y.textContent || y.innerText;
+            var xContent = (x.textContent || x.innerText).trim();
+            var yContent = (y.textContent || y.innerText).trim();
 
-            var xNum = parseFloat(xContent.replace(/[^0-9.-]/g, ""));
-            var yNum = parseFloat(yContent.replace(/[^0-9.-]/g, ""));
+            // Pembersihan tanda pemisah ribuan agar pembacaan nilai numerik akurat saat disortir
+            var xClean = xContent.replace(/\./g, "").replace(/[^0-9.-]/g, "");
+            var yClean = yContent.replace(/\./g, "").replace(/[^0-9.-]/g, "");
+
+            var xNum = parseFloat(xClean);
+            var yNum = parseFloat(yClean);
 
             var shouldSwitch = false;
             if (!isNaN(xNum) && !isNaN(yNum)) {
@@ -612,17 +628,11 @@
                 break;
               }
             } else {
-              if (
-                direction == "asc" &&
-                xContent.toLowerCase() > yContent.toLowerCase()
-              ) {
+              if (direction == "asc" && xContent.toLowerCase() > yContent.toLowerCase()) {
                 shouldSwitch = true;
                 break;
               }
-              if (
-                direction == "desc" &&
-                xContent.toLowerCase() < yContent.toLowerCase()
-              ) {
+              if (direction == "desc" && xContent.toLowerCase() < yContent.toLowerCase()) {
                 shouldSwitch = true;
                 break;
               }
@@ -641,76 +651,97 @@
         }
       }
 
-function openEditModal(
-  id,
-  item,
-  qty,
-  origin,
-  dest,
-  rate,
-  remark,
-  bl,
-  containerParam, // Mengubah nama parameter agar tidak tabrakan
-  returnTo,
-  lolo,
-  buying,
-) {
-  // 1. Masukkan data ke input field di dalam modal
-  document.getElementById("edit_id").value = id;
-  document.getElementById("edit_item").value = item;
-  document.getElementById("edit_qty").value = qty;
-  document.getElementById("edit_origin").value = origin;
-  document.getElementById("edit_destination").value = dest;
-  document.getElementById("edit_rate").value = rate;
-  document.getElementById("edit_remark").value = remark;
+      // LIVE REAL-TIME INSTANT MULTI-COLUMN SEARCH FUNCTION
+      function filterTable() {
+        const input = document.getElementById("tableSearch");
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById("quotationTable");
+        const tr = table.getElementsByTagName("tr");
+        let visibleCount = 0;
 
-  // Data Finance yang bisa di-edit kembali jika sebelumnya sudah diisi
-  document.getElementById("edit_bl_number").value = bl;
-  document.getElementById("edit_container_number").value = containerParam;
-  document.getElementById("edit_return_to").value = returnTo;
-  document.getElementById("edit_lolo_rate").value = lolo;
-  document.getElementById("edit_buying_price").value = buying;
+        for (let i = 1; i < tr.length; i++) {
+          let rowContainsKeyword = false;
+          const tds = tr[i].getElementsByTagName("td");
 
-  // 2. Ubah nama variabel DOM di bawah ini agar bebas dari bentrokan nama
-  const fileContainer = document.getElementById("uploaded_files_container");
-  fileContainer.innerHTML = "<span style='font-size:13px; color:#6c757d;'>🔄 Memuat dokumen pendukung...</span>";
+          // Melakukan pencarian di seluruh kolom kecuali kolom menu aksi terakhir
+          for (let j = 0; j < tds.length - 1; j++) {
+            const td = tds[j];
+            if (td) {
+              const textValue = td.textContent || td.innerText;
+              if (textValue.toLowerCase().indexOf(filter) > -1) {
+                rowContainsKeyword = true;
+                break;
+              }
+            }
+          }
 
-  // 3. Ambil data dokumen dari database lewat route handler baru
-  fetch(`/get-documents?shipment_id=${id}`)
-    .then(res => res.json())
-    .then(docs => {
-      fileContainer.innerHTML = ""; // Bersihkan teks loading
-      
-      if (!docs || docs.length === 0) {
-         fileContainer.innerHTML = "<span style='color:#6c757d; font-size:13px; font-style:italic;'>Belum ada dokumen pendukung yang diunggah.</span>";
-         return;
+          if (rowContainsKeyword) {
+            tr[i].style.display = "";
+            visibleCount++;
+          } else {
+            tr[i].style.display = "none";
+          }
+        }
+
+        const countSpan = document.getElementById("searchCount");
+        if (filter === "") {
+          countSpan.textContent = "";
+        } else {
+          if (visibleCount === 0) {
+            countSpan.innerHTML = "<b style='color: #dc2626;'>❌ Data tidak cocok</b>";
+          } else {
+            countSpan.textContent = `🔹 ${visibleCount} data ditemukan`;
+          }
+        }
       }
-      
-      // Tampilkan berkas yang ada di database satu per satu
-      docs.forEach(doc => {
-        const fileRow = document.createElement("div");
-        fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#e9ecef; padding:8px 12px; border-radius:4px; font-size:13px;";
-        fileRow.innerHTML = `
-          <span>📄 <a href="${doc.document_path}" target="_blank" style="color:#007bff; text-decoration:none; font-weight:500;">${doc.file_name}</a></span>
-          <a href="javascript:void(0);" onclick="deleteDocument('${doc.id}', this)" style="color:#dc3545; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
-        `;
-        fileContainer.appendChild(fileRow);
-      });
-    })
-    .catch(err => {
-      fileContainer.innerHTML = "<span style='color:#dc3545; font-size:13px;'>❌ Gagal memuat daftar berkas pendukung.</span>";
-    });
 
-  // 4. Tampilkan modal edit ke layar
-  document.getElementById("editModal").style.display = "flex";
-}
+      function openEditModal(id, item, qty, origin, dest, rate, remark, bl, containerParam, returnTo, lolo, buying) {
+        document.getElementById("edit_id").value = id;
+        document.getElementById("edit_item").value = item;
+        document.getElementById("edit_qty").value = qty;
+        document.getElementById("edit_origin").value = origin;
+        document.getElementById("edit_destination").value = dest;
+        document.getElementById("edit_rate").value = rate;
+        document.getElementById("edit_remark").value = remark;
 
-      // Fungsi untuk menutup Pop-Up
+        document.getElementById("edit_bl_number").value = bl;
+        document.getElementById("edit_container_number").value = containerParam;
+        document.getElementById("edit_return_to").value = returnTo;
+        document.getElementById("edit_lolo_rate").value = lolo;
+        document.getElementById("edit_buying_price").value = buying;
+
+        const fileContainer = document.getElementById("uploaded_files_container");
+        fileContainer.innerHTML = "<span style='font-size:13px; color:#64748b;'>🔄 Memuat dokumen pendukung...</span>";
+
+        fetch(`/get-documents?shipment_id=${id}`)
+          .then(res => res.json())
+          .then(docs => {
+            fileContainer.innerHTML = ""; 
+            if (!docs || docs.length === 0) {
+               fileContainer.innerHTML = "<span style='color:#64748b; font-size:13px; font-style:italic;'>Belum ada dokumen pendukung yang diunggah.</span>";
+               return;
+            }
+            docs.forEach(doc => {
+              const fileRow = document.createElement("div");
+              fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#e2e8f0; padding:8px 12px; border-radius:4px; font-size:13px;";
+              fileRow.innerHTML = `
+                <span>📄 <a href="/view?file=${encodeURIComponent(doc.document_path)}" target="_blank" style="color:#4f46e5; text-decoration:none; font-weight:600;">${doc.file_name}</a></span>
+                <a href="javascript:void(0);" onclick="deleteDocument('${doc.id}', this)" style="color:#dc2626; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
+              `;
+              fileContainer.appendChild(fileRow);
+            });
+          })
+          .catch(err => {
+            fileContainer.innerHTML = "<span style='color:#dc2626; font-size:13px;'>❌ Gagal memuat daftar berkas pendukung.</span>";
+          });
+
+        document.getElementById("editModal").style.display = "flex";
+      }
+
       function closeEditModal() {
         document.getElementById("editModal").style.display = "none";
       }
 
-      // Opsional: Menutup pop-up secara otomatis jika user mengklik area hitam di luar kotak form
       window.onclick = function (event) {
         var modal = document.getElementById("editModal");
         if (event.target == modal) {
@@ -718,133 +749,106 @@ function openEditModal(
         }
       };
 
-
       function updateStatus(shipmentId, selectElement) {
         const newStatus = selectElement.value;
-
-        // Mengirim data menggunakan API Fetch bawaan browser
         fetch('/update-status', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `id=${encodeURIComponent(shipmentId)}&status=${encodeURIComponent(newStatus)}`
         })
         .then(response => {
-          if (!response.ok) {
-            throw new Error('Gagal memperbarui status di server');
-          }
-          // Opsional: Beri efek visual sukses (border hijau sesaat)
-          selectElement.style.borderColor = '#28a745';
-          setTimeout(() => selectElement.style.borderColor = '#ccc', 1000);
+          if (!response.ok) throw new Error('Gagal memperbarui status di server');
+          selectElement.style.borderColor = '#059669';
+          setTimeout(() => selectElement.style.borderColor = '#94a3b8', 1000);
         })
         .catch(error => {
           alert(error.message);
-          // Jika gagal, halaman di-reload untuk mengembalikan status asli di layar
           window.location.reload();
         });
-}
+      }
 
-document.addEventListener("DOMContentLoaded", function () {
-  const dropZone = document.getElementById("drop_zone");
-  const fileInput = document.getElementById("file_input");
+      // INTEGRASI DRAG AND DROP FILE UPLOADER
+      document.addEventListener("DOMContentLoaded", function () {
+        const dropZone = document.getElementById("drop_zone");
+        const fileInput = document.getElementById("file_input");
 
-  if (!dropZone) return;
+        if (!dropZone) return;
 
-  // 1. Klik area Drag & Drop untuk membuka file picker
-  dropZone.addEventListener("click", () => fileInput.click());
+        dropZone.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", function () {
+          handleFileSelection(this.files);
+        });
 
-  fileInput.addEventListener("change", function () {
-    handleFileSelection(this.files);
-  });
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.style.background = "#cbd5e1";
+          dropZone.style.borderColor = "#4338ca";
+        });
 
-  // 2. Efek Visual saat file melayang di atas Drop Zone
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.style.background = "#e2e6ea";
-    dropZone.style.borderColor = "#0056b3";
-  });
+        dropZone.addEventListener("dragleave", () => {
+          dropZone.style.background = "#f8fafc";
+          dropZone.style.borderColor = "var(--accent)";
+        });
 
-  dropZone.addEventListener("dragleave", () => {
-    dropZone.style.background = "#f8f9fa";
-    dropZone.style.borderColor = "#007bff";
-  });
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.style.background = "#f8fafc";
+          dropZone.style.borderColor = "var(--accent)";
+          if (e.dataTransfer.files.length > 0) {
+            handleFileSelection(e.dataTransfer.files);
+          }
+        });
+      });
 
-  // 3. Ketika File dilepas (Drop)
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropZone.style.background = "#f8f9fa";
-    dropZone.style.borderColor = "#007bff";
-    
-    if (e.dataTransfer.files.length > 0) {
-      handleFileSelection(e.dataTransfer.files);
-    }
-  });
-});
+      function handleFileSelection(files) {
+        const shipmentId = document.getElementById("edit_id").value;
+        if (!shipmentId) {
+          alert("ID Kargo tidak ditemukan. Silakan pilih kargo kembali.");
+          return;
+        }
+        for (let i = 0; i < files.length; i++) {
+          uploadFileToMinio(files[i], shipmentId);
+        }
+      }
 
-// Fungsi looping untuk upload file satu per satu
-function handleFileSelection(files) {
-  const shipmentId = document.getElementById("edit_id").value;
-  if (!shipmentId) {
-    alert("ID Kargo tidak ditemukan. Silakan pilih kargo kembali.");
-    return;
-  }
+      function uploadFileToMinio(file, shipmentId) {
+        const container = document.getElementById("uploaded_files_container");
+        const fileRow = document.createElement("div");
+        fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#fef3c7; padding:8px 12px; border:1px solid #fde68a; border-radius:4px; font-size:13px; color:#92400e;";
+        fileRow.innerHTML = `<span>⏳ Memproses berkas <strong>${file.name}</strong>...</span>`;
+        container.appendChild(fileRow);
 
-  for (let i = 0; i < files.length; i++) {
-    uploadFileToMinio(files[i], shipmentId);
-  }
-}
+        const formData = new FormData();
+        formData.append("shipment_id", shipmentId);
+        formData.append("document", file);
 
-// Fungsi AJAX kirim file ke Backend (Go -> MinIO -> Postgres)
-function uploadFileToMinio(file, shipmentId) {
-  const container = document.getElementById("uploaded_files_container");
+        fetch("/upload-document", { method: "POST", body: formData })
+        .then(response => {
+          if (!response.ok) throw new Error("Gagal mengunggah dokumen ke server");
+          return response.json();
+        })
+        .then(data => {
+          fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#d1fae5; padding:8px 12px; border:1px solid #a7f3d0; border-radius:4px; font-size:13px; color:#065f46;";
+          fileRow.innerHTML = `
+            <span>📄 <strong>${file.name}</strong> (Tersimpan)</span>
+            <a href="javascript:void(0);" onclick="deleteDocument('${data.document_id}', this)" style="color:#dc2626; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
+          `;
+        })
+        .catch(error => {
+          fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#fee2e2; padding:8px 12px; border:1px solid #fca5a5; border-radius:4px; font-size:13px; color:#991b1b;";
+          fileRow.innerHTML = `<span>❌ ${file.name} (${error.message})</span>`;
+        });
+      }
 
-  // Komponen Tampilan Loading
-  const fileRow = document.createElement("div");
-  fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#fff3cd; padding:8px 12px; border:1px solid #ffeeba; border-radius:4px; font-size:13px; color:#856404;";
-  fileRow.innerHTML = `<span>⏳ Memproses berkas <strong>${file.name}</strong>...</span>`;
-  container.appendChild(fileRow);
-
-  const formData = new FormData();
-  formData.append("shipment_id", shipmentId);
-  formData.append("document", file);
-
-  fetch("/upload-document", {
-    method: "POST",
-    body: formData
-  })
-  .then(response => {
-    if (!response.ok) throw new Error("Gagal mengunggah dokumen ke server");
-    return response.json();
-  })
-  .then(data => {
-    // Ubah tampilan jadi SUKSES
-    fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#e2f0d9; padding:8px 12px; border:1px solid #c5e1a5; border-radius:4px; font-size:13px; color:#33691e;";
-    fileRow.innerHTML = `
-      <span>📄 <strong>${file.name}</strong> (Tersimpan)</span>
-      <a href="javascript:void(0);" onclick="deleteDocument('${data.document_id}', this)" style="color:#dc3545; font-weight:bold; text-decoration:none; font-size:12px;">[Hapus]</a>
-    `;
-  })
-  .catch(error => {
-    // Ubah tampilan jadi GAGAL
-    fileRow.style = "display:flex; justify-content:space-between; align-items:center; background:#f8d7da; padding:8px 12px; border:1px solid #f5c6cb; border-radius:4px; font-size:13px; color:#721c24;";
-    fileRow.innerHTML = `<span>❌ ${file.name} (${error.message})</span>`;
-  });
-}
-
-// Fungsi Hapus Dokumen (Tembak ke handler endpoint /delete-document)
-function deleteDocument(docId, element) {
-  if (!confirm("Apakah Anda yakin ingin menghapus dokumen ini?")) return;
-
-  fetch(`/delete-document?id=${docId}`, {
-    method: "POST" // Ubah ke POST jika rute Mux kamu menggunakan HandleFunc POST standar
-  })
-  .then(response => {
-    if (!response.ok) throw new Error("Gagal menghapus berkas di server");
-    element.parentElement.remove(); // Potong elemen dari modal secara instan
-  })
-  .catch(error => alert(error.message));
-}
+      function deleteDocument(docId, element) {
+        if (!confirm("Apakah Anda yakin ingin menghapus dokumen ini?")) return;
+        fetch(`/delete-document?id=${docId}`, { method: "POST" })
+        .then(response => {
+          if (!response.ok) throw new Error("Gagal menghapus berkas di server");
+          element.parentElement.remove();
+        })
+        .catch(error => alert(error.message));
+      }
     </script>
   </body>
 </html>

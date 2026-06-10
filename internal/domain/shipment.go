@@ -64,6 +64,7 @@ type ShipmentUsecase interface {
 	UploadDocument(ctx context.Context, shipmentID, fileName, contentType string, fileData []byte) (*ShipmentDocument, error)
 	GetShipmentDocuments(ctx context.Context, shipmentID string) ([]ShipmentDocument, error)
 	UpdateShipmentData(ctx context.Context, s *Shipment) error
+	DeleteShipmentDocument(ctx context.Context, docID string) error
 }
 
 type MinioRepository interface {
@@ -76,6 +77,7 @@ type DocumentRepository interface {
 	Save(ctx context.Context, doc *ShipmentDocument) error
 	FindByShipmentID(ctx context.Context, shipmentID string) ([]ShipmentDocument, error)
 	DeleteDoc(ctx context.Context, id string) error // Nama ini yang dipakai sesuai error compiler tadi
+	FindDocByID(ctx context.Context, id string) (*ShipmentDocument, error)
 }
 
 // fileData []byte, contentType string

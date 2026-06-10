@@ -39,6 +39,7 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/upload-document", h.UploadDocument) // Untuk AJAX Drag & Drop
 	mux.HandleFunc("/get-documents", h.GetDocuments)
 	mux.HandleFunc("/update", h.UpdateShipment)
+	mux.HandleFunc("/delete-document", h.DeleteDocument)
 }
 
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
@@ -93,22 +94,6 @@ func (h *ShipmentHandler) SubmitForm(w http.ResponseWriter, r *http.Request) {
 		BuyingPrice:     buyingPrice,
 		Remark:          r.FormValue("remark"),
 	}
-
-	// // Buat penampung kosong untuk data file dokumen mentah
-	// var fileData []byte
-	// var contentType string
-
-	// // 3. Ambil data file dokumen yang di-upload (PDF/Gambar) jika ada
-	// file, header, err := r.FormFile("document")
-	// if err == nil {
-	// 	defer file.Close()
-	// 	// Baca file menjadi pecahan byte data mentah
-	// 	data, err := io.ReadAll(file)
-	// 	if err == nil {
-	// 		fileData = data
-	// 		contentType = header.Header.Get("Content-Type")
-	// 	}
-	// }
 
 	// 4. Simpan seluruh data teks ke Postgres + upload file mentah ke MinIO via Usecase
 	err = h.usecase.InsertShipment(r.Context(), shipment)
@@ -215,6 +200,34 @@ func (h *ShipmentHandler) ViewFile(w http.ResponseWriter, r *http.Request) {
 
 	// Stream datanya langsung ke layar browser
 	io.Copy(w, object)
+}
+
+func (h *ShipmentHandler) DeleteDocument(w http.ResponseWriter, r *http.Request) {
+	// 1. Validasi method harus POST karena dikirim lewat AJAX Fetch method POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method tidak diizinkan", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 2. Ambil parameter id dokumen dari query string URL (?id=xxx)
+	docID := r.URL.Query().Get("id")
+	if docID == "" {
+		http.Error(w, "ID Dokumen tidak boleh kosong", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Panggil layer Usecase untuk menghapus file di MinIO & baris data di Postgres
+	err := h.usecase.DeleteShipmentDocument(r.Context(), docID)
+	if err != nil {
+		// Jika gagal, kirim status error 500 ke frontend
+		http.Error(w, "Gagal menghapus dokumen: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Jika sukses, kirim respon JSON balik ke JavaScript frontend
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "success", "message": "Dokumen berhasil dihapus"}`))
 }
 
 //---EXCEL GENERATION------------------------------------------------------
