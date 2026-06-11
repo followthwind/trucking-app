@@ -47,7 +47,7 @@ type ShipmentDocument struct {
 
 type ShipmentRepository interface {
 	Create(ctx context.Context, shipment *Shipment) error
-	FetchAll(ctx context.Context) ([]Shipment, error)
+	FetchAll(ctx context.Context, startDate, endDate time.Time) ([]Shipment, error)
 	FindByID(ctx context.Context, id string) (*Shipment, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, shipment *Shipment) error
@@ -57,7 +57,7 @@ type ShipmentRepository interface {
 type ShipmentUsecase interface {
 	// Pastikan parameternya sama persis dengan yang ada di Usecase Anda saat ini
 	InsertShipment(ctx context.Context, shipment *Shipment) error
-	GetAllShipments(ctx context.Context) ([]Shipment, error)
+	GetAllShipments(ctx context.Context, startDate, endDate time.Time) ([]Shipment, error)
 	GetShipmentByID(ctx context.Context, id string) (*Shipment, error) // <-- Tambahkan ini
 	DeleteShipment(ctx context.Context, id string) error
 	UpdateShipmentStatus(ctx context.Context, id string, status string) error

@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>SMRT Trucking Quotation System</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       :root {
@@ -903,7 +904,7 @@
         document.getElementById("sum_margin").textContent  = avgPct.toFixed(1) + "%";
         document.getElementById("sum_margin_sub").textContent  = "rata-rata profit per kargo";
         document.getElementById("sum_total").textContent   = totalRows + " kargo";
-        document.getElementById("sum_total_sub").textContent   = cInv + " invoicing · " + cPend + " pending";
+        document.getElementById("sum_total_sub").textContent   = cInv + " invoicing · " + cPend + " pending · " + cDone + "Submit OA Done";
 
         // --- STATUS BAR LIST ---
         const statusItems = [

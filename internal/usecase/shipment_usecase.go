@@ -105,8 +105,8 @@ func (u *shipmentUsecase) UpdateShipmentStatus(ctx context.Context, id string, s
 }
 
 // GetAllShipments menarik daftar semua data dari database
-func (u *shipmentUsecase) GetAllShipments(ctx context.Context) ([]domain.Shipment, error) {
-	return u.shipmentRepo.FetchAll(ctx)
+func (u *shipmentUsecase) GetAllShipments(ctx context.Context, startDate, endDate time.Time) ([]domain.Shipment, error) {
+	return u.shipmentRepo.FetchAll(ctx, startDate, endDate)
 }
 
 func (u *shipmentUsecase) GetShipmentByID(ctx context.Context, id string) (*domain.Shipment, error) {

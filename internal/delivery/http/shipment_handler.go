@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 	"trucking-app/internal/domain"
 
 	"github.com/jung-kurt/gofpdf"
@@ -43,6 +44,9 @@ func (h *ShipmentHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/logos.png", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "logos.png")
 	})
+	mux.HandleFunc("/favicon.png", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "favicon.ico")
+	})
 }
 
 // ShowFormAndTable menampilkan halaman utama berisi Form Input dan Tabel Quotation
@@ -52,14 +56,37 @@ func (h *ShipmentHandler) ShowFormAndTable(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Ambil semua data yang ada di database lewat usecase
-	shipments, err := h.usecase.GetAllShipments(r.Context())
+	// 1. TANGKAP PARAMETER BULAN & TAHUN DARI URL QUERY
+	monthStr := r.URL.Query().Get("month")
+	yearStr := r.URL.Query().Get("year")
+
+	// Konversi string bulan ke angka integer
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		month = int(time.Now().Month()) // Default ke bulan berjalan jika kosong/error
+	}
+
+	// Konversi string tahun ke angka integer
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		year = time.Now().Year() // Default ke tahun berjalan jika kosong/error
+	}
+
+	// 2. LOGIKA PENENTUAN RENTANG TANGGAL BULANAN
+	// Tanggal awal: Selalu tanggal 1 jam 00:00:00 di bulan & tahun terpilih
+	startDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+
+	// Tanggal akhir: Lompat 1 bulan kedepan, lalu kurangi 1 detik (Otomatis dapat akhir bulan sebelumnya)
+	endDate := startDate.AddDate(0, 1, 0).Add(-time.Second)
+
+	// 3. AMBIL DATA BERDASARKAN RENTANG WAKTU LEWAT USECASE
+	shipments, err := h.usecase.GetAllShipments(r.Context(), startDate, endDate)
 	if err != nil {
 		http.Error(w, "Gagal mengambil data database: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Render file HTML ke browser
+	// 4. RENDER KE BROWSER VIA TEMPLATE HTML
 	tmpl := template.Must(template.ParseFiles("internal/delivery/http/index.html"))
 	tmpl.Execute(w, shipments)
 }
@@ -236,8 +263,31 @@ func (h *ShipmentHandler) DeleteDocument(w http.ResponseWriter, r *http.Request)
 //---EXCEL GENERATION------------------------------------------------------
 
 func (h *ShipmentHandler) ExportExcel(w http.ResponseWriter, r *http.Request) {
+
+	// 1. TANGKAP PARAMETER BULAN & TAHUN DARI URL QUERY
+	monthStr := r.URL.Query().Get("month")
+	yearStr := r.URL.Query().Get("year")
+
+	// Konversi string bulan ke angka integer
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
+		month = int(time.Now().Month()) // Default ke bulan berjalan jika kosong/error
+	}
+
+	// Konversi string tahun ke angka integer
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		year = time.Now().Year() // Default ke tahun berjalan jika kosong/error
+	}
+
+	// 2. LOGIKA PENENTUAN RENTANG TANGGAL BULANAN
+	// Tanggal awal: Selalu tanggal 1 jam 00:00:00 di bulan & tahun terpilih
+	startDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
+
+	// Tanggal akhir: Lompat 1 bulan kedepan, lalu kurangi 1 detik (Otomatis dapat akhir bulan sebelumnya)
+	endDate := startDate.AddDate(0, 1, 0).Add(-time.Second)
 	// 1. Ambil seluruh data dari database lewat usecase
-	shipments, err := h.usecase.GetAllShipments(r.Context())
+	shipments, err := h.usecase.GetAllShipments(r.Context(), startDate, endDate)
 	if err != nil {
 		http.Error(w, "Gagal mengambil data untuk excel: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -457,7 +507,7 @@ func (h *ShipmentHandler) GenerateInvoice(w http.ResponseWriter, r *http.Request
 
 	// ---- TABEL RINCIAN BIAYA (8 KOLOM - TANPA KOLOM TOTAL) ----
 	pdf.SetFont("Courier", "B", 9)
-	pdf.SetFillColor(0, 123, 255)   // WARNA BIRU UTAMA
+	pdf.SetFillColor(0, 122, 201)   // WARNA BIRU UTAMA
 	pdf.SetTextColor(255, 255, 255) // TEKS PUTIH
 
 	// Distribusi ulang lebar kolom setelah kolom 'Total' dihapus (Total pas 190mm)

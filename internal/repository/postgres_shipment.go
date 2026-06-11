@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"time"
 	"trucking-app/internal/domain"
 )
 
@@ -90,16 +91,20 @@ func (r *postgresShipmentRepository) UpdateStatus(ctx context.Context, id string
 }
 
 // FetchAll bertugas menjalankan query SELECT untuk mengambil semua data dari PostgreSQL
-func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shipment, error) {
+func (r *postgresShipmentRepository) FetchAll(ctx context.Context, startDate, endDate time.Time) ([]domain.Shipment, error) {
+	// Tambahkan kondisi BETWEEN untuk menyaring berdasarkan tanggal kalender bulanan
 	query := `
         SELECT id, item_description, origin, destination, qty, rate, 
-        amount, buying_price, gross_profit, profit_percentage, 
-        remark, document_path, created_at, lolo_rate, return_to, bl_number, container_number, status
+               amount, buying_price, gross_profit, profit_percentage, 
+               remark, document_path, created_at, lolo_rate, return_to, bl_number, container_number, status
         FROM shipments 
         WHERE is_delete = false 
+          AND created_at BETWEEN $1 AND $2
         ORDER BY created_at DESC
     `
-	rows, err := r.db.QueryContext(ctx, query)
+
+	// Masukkan startDate ($1) dan endDate ($2) ke dalam QueryContext
+	rows, err := r.db.QueryContext(ctx, query, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +126,6 @@ func (r *postgresShipmentRepository) FetchAll(ctx context.Context) ([]domain.Shi
 
 	return shipments, nil
 }
-
 func (r *postgresShipmentRepository) FindByID(ctx context.Context, id string) (*domain.Shipment, error) {
 	query := `SELECT id, item_description, origin, destination, qty, rate, amount, buying_price, gross_profit, profit_percentage, remark, document_path, created_at FROM shipments WHERE id = $1`
 	row := r.db.QueryRowContext(ctx, query, id)
